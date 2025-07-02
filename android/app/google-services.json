@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "1075675221951",
+    "firebase_url": "https://p2a-hackathon-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "p2a-hackathon",
+    "storage_bucket": "p2a-hackathon.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1075675221951:android:6105bb108a4e6c1ec45b0a",
+        "android_client_info": {
+          "package_name": "com.example.agos"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJnfUWKcAVQIQBRs3_41aA8jz6JqlPmPA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1075675221951:android:829dd58ae135c98dc45b0a",
+        "android_client_info": {
+          "package_name": "com.example.p2a"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJnfUWKcAVQIQBRs3_41aA8jz6JqlPmPA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

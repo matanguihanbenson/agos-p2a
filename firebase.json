@@ -1,0 +1,41 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "p2a-hackathon",
+          "appId": "1:1075675221951:android:6105bb108a4e6c1ec45b0a",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "p2a-hackathon",
+          "configurations": {
+            "android": "1:1075675221951:android:6105bb108a4e6c1ec45b0a",
+            "ios": "1:1075675221951:ios:0dfcc411389fe77ac45b0a",
+            "macos": "1:1075675221951:ios:0dfcc411389fe77ac45b0a",
+            "web": "1:1075675221951:web:7d49ce764970065ac45b0a"
+          }
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint",
+        "npm --prefix \"$RESOURCE_DIR\" run build"
+      ]
+    }
+  ]
+}
