@@ -31,7 +31,7 @@ class BottomNavigation extends ConsumerWidget {
         final screens = [
           const MapScreen(),
           // Pass the required args here:
-          BotScreen(userId: uid!, role: role),
+          BotScreen(role: role),
           const HomePage(),
           const NotificationScreen(),
           // const ImpactScreen(),

@@ -1,6 +1,6 @@
 name: agos
 description: "A new Flutter project."
-publish_to: 'none'
+publish_to: "none"
 version: 0.1.0
 
 environment:
@@ -19,6 +19,8 @@ dependencies:
   flutter_map: ^7.0.0
   flutter_map_heatmap: ^0.0.8
   latlong2: 0.9.1
+  flutter_map_cancellable_tile_provider: ^3.0.2
+  http: ^1.4.0
 
 dev_dependencies:
   flutter_test:
