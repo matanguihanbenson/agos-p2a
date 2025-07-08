@@ -7,6 +7,7 @@ import '../widgets/bot_details/admin_actions.dart';
 import '../widgets/bot_details/user_actions.dart';
 import '../widgets/bot_details/location_tab.dart';
 import '../widgets/bot_details/technical_tab.dart';
+import '../widgets/bot_details/assignment_card.dart';
 
 class BotDetailsPage extends StatefulWidget {
   final DocumentSnapshot doc;
@@ -65,8 +66,13 @@ class _BotDetailsPageState extends State<BotDetailsPage>
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Operator card
-            _buildOperatorCard(assignedUid, cs),
+            const SizedBox(height: 16),
+            
+            // Assignment card
+            AssignmentCard(
+              assignedUid: assignedUid,
+              cs: cs,
+            ),
 
             // Status overview
             Padding(

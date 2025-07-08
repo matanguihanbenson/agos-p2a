@@ -147,33 +147,45 @@ class _LocationInfoCardState extends State<LocationInfoCard> {
         final addressParts = <String>[];
 
         // Get specific address components in order of specificity
-        final street = data['locality']?.toString() ?? '';
-        final sublocality =
-            data['localityInfo']?['administrative']?[3]?['name']?.toString() ??
-            '';
+        final locality = data['locality']?.toString() ?? '';
         final city = data['city']?.toString() ?? '';
         final principalSubdivision =
             data['principalSubdivision']?.toString() ?? '';
-        final countryName = data['countryName']?.toString() ?? '';
+        final countryName = _cleanCountryName(data['countryName']?.toString() ?? '');
+
+        // Get sublocality from administrative array safely
+        String sublocality = '';
+        final localityInfo = data['localityInfo'];
+        if (localityInfo != null && localityInfo['administrative'] != null) {
+          final administrative = localityInfo['administrative'] as List;
+          // Safely check if index 3 exists and get the province/state name
+          if (administrative.length > 2) {
+            sublocality = administrative[2]['name']?.toString() ?? '';
+          }
+        }
 
         // Add components in logical order, avoiding duplicates and generic descriptions
-        if (street.isNotEmpty && !_isGenericDescription(street)) {
-          addressParts.add(street);
+        if (locality.isNotEmpty && !_isGenericDescription(locality)) {
+          addressParts.add(locality);
         }
 
         if (sublocality.isNotEmpty &&
-            sublocality != street &&
+            sublocality != locality &&
             sublocality != city &&
             !_isGenericDescription(sublocality)) {
           addressParts.add(sublocality);
         }
 
-        if (city.isNotEmpty && city != street && !_isGenericDescription(city)) {
+        if (city.isNotEmpty && 
+            city != locality && 
+            city != sublocality && 
+            !_isGenericDescription(city)) {
           addressParts.add(city);
         }
 
         if (principalSubdivision.isNotEmpty &&
             principalSubdivision != city &&
+            principalSubdivision != sublocality &&
             !_isGenericDescription(principalSubdivision)) {
           addressParts.add(principalSubdivision);
         }
@@ -199,6 +211,17 @@ class _LocationInfoCardState extends State<LocationInfoCard> {
       }
     }
     return null;
+  }
+
+  // Helper method to clean up country names
+  String _cleanCountryName(String countryName) {
+    if (countryName.isEmpty) return countryName;
+    
+    // Remove common parenthetical additions like "(the)"
+    return countryName
+        .replaceAll(RegExp(r'\s*\(the\)\s*', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\s*\(Republic of\)\s*', caseSensitive: false), '')
+        .trim();
   }
 
   // Helper method to filter out generic descriptions
