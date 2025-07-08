@@ -164,7 +164,6 @@ class _LocationInfoCardState extends State<LocationInfoCard> {
           }
         }
 
-        // Add components in logical order, avoiding duplicates and generic descriptions
         if (locality.isNotEmpty && !_isGenericDescription(locality)) {
           addressParts.add(locality);
         }

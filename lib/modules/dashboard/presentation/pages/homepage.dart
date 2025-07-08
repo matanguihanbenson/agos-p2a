@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/theme.dart';
 import '../../../../core/providers/user_providers.dart';
+import '../../../notifications/presentation/pages/notification_screen.dart';
 
 // Import all widgets
 import '../../widgets/system_status_widget.dart';
@@ -62,7 +63,11 @@ class HomePage extends ConsumerWidget {
                       color: theme.colorScheme.primary,
                     ),
                     onPressed: () {
-                      // TODO: Handle notifications
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const NotificationScreen(),
+                        ),
+                      );
                     },
                   ),
                 ),

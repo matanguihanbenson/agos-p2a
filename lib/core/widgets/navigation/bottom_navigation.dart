@@ -7,7 +7,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agos/modules/dashboard/presentation/pages/homepage.dart';
 import 'package:agos/modules/map/presentation/pages/map_screen.dart';
 import 'package:agos/modules/bot/presentation/pages/bot_screen.dart';
-import 'package:agos/modules/notifications/presentation/pages/notification_screen.dart';
+import 'package:agos/modules/users/presentation/pages/users_screen.dart';
+import 'package:agos/modules/schedule/presentation/pages/schedule_screen.dart';
+import 'package:agos/modules/impact/presentation/pages/impact_screen.dart';
 
 import '../../providers/nav_provider.dart';
 import '../../providers/user_providers.dart';
@@ -27,49 +29,38 @@ class BottomNavigation extends ConsumerWidget {
       error: (error, _) =>
           Scaffold(body: Center(child: Text('Error loading role: $error'))),
       data: (role) {
-        // Build your screens, passing uid & role into BotScreen
-        final screens = [
-          const MapScreen(),
-          // Pass the required args here:
-          BotScreen(role: role),
-          const HomePage(),
-          const NotificationScreen(),
-          // const ImpactScreen(),
-        ];
+        // Build your screens based on role
+        final screens = role == 'admin'
+            ? [
+                const MapScreen(),
+                BotScreen(role: role),
+                const HomePage(),
+                const UsersScreen(),
+                const ImpactScreen(),
+              ]
+            : [
+                const MapScreen(),
+                BotScreen(role: role),
+                const HomePage(),
+                const ScheduleScreen(),
+                const ImpactScreen(),
+              ];
 
         final adjustedIndex = currentIndex >= screens.length ? 0 : currentIndex;
 
         final navItems = [
           const BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Map'),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.directions_boat),
-            label: 'Bots', // changed from 'Boats'
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.directions_boat),
+            label: 'Bots',
           ),
           const BottomNavigationBarItem(
             icon: Icon(Icons.dashboard),
             label: 'Dashboard',
           ),
           BottomNavigationBarItem(
-            icon: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('notifications')
-                  .doc(uid)
-                  .collection('userNotifications')
-                  .where('isRead', isEqualTo: false)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                final unreadCount = snapshot.data?.docs.length ?? 0;
-                return badges.Badge(
-                  showBadge: unreadCount > 0,
-                  badgeContent: Text(
-                    unreadCount.toString(),
-                    style: const TextStyle(color: Colors.white, fontSize: 10),
-                  ),
-                  child: const Icon(Icons.notifications),
-                );
-              },
-            ),
-            label: 'Notifications',
+            icon: Icon(role == 'admin' ? Icons.people : Icons.schedule),
+            label: role == 'admin' ? 'Users' : 'Schedule',
           ),
           const BottomNavigationBarItem(
             icon: Icon(Icons.public),
