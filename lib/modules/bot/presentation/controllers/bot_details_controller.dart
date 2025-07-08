@@ -5,7 +5,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_database/firebase_database.dart';
 
-/// Controller for BotDetailsPage handling realtime data and user role checks.
 class BotDetailsController extends ChangeNotifier {
   final String botId;
   final DatabaseReference _database = FirebaseDatabase.instance.ref();

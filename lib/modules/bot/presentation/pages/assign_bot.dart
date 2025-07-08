@@ -301,7 +301,7 @@ class _AssignBotScreenState extends ConsumerState<AssignBotScreen> {
                     Row(
                       children: [
                         Icon(
-                          Icons.smart_toy_rounded,
+                          Icons.directions_boat,
                           color: colorScheme.primary,
                           size: 20,
                         ),
@@ -413,7 +413,7 @@ class _AssignBotScreenState extends ConsumerState<AssignBotScreen> {
 
                           if (availableBots.isEmpty) {
                             return _emptyState(
-                              icon: Icons.smart_toy_outlined,
+                              icon: Icons.directions_boat_outlined,
                               title: botSearchQuery.isNotEmpty
                                   ? 'No bots found'
                                   : 'No available bots',
@@ -464,7 +464,7 @@ class _AssignBotScreenState extends ConsumerState<AssignBotScreen> {
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Icon(
-                                      Icons.smart_toy_rounded,
+                                      Icons.directions_boat,
                                       color: isActive
                                           ? Colors.green
                                           : Colors.grey,

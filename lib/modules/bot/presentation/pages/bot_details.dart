@@ -8,7 +8,6 @@ import '../widgets/bot_details/user_actions.dart';
 import '../widgets/bot_details/location_tab.dart';
 import '../widgets/bot_details/technical_tab.dart';
 
-/// Main page displaying bot details, using BotDetailsController for data.
 class BotDetailsPage extends StatefulWidget {
   final DocumentSnapshot doc;
   final int index;
