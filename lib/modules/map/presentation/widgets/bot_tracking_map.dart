@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'dart:async';
 
 class BotTrackingMap extends StatefulWidget {
@@ -13,26 +17,99 @@ class BotTrackingMap extends StatefulWidget {
 
 class _BotTrackingMapState extends State<BotTrackingMap> {
   final DatabaseReference _botsRef = FirebaseDatabase.instance.ref('bots');
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final MapController _mapController = MapController();
   final Distance _distance = const Distance();
 
   Map<String, LatLng> _botLocations = {};
   Map<String, Map<String, dynamic>> _botDetails = {};
+  Map<String, String> _botAddresses = {};
   String? _selectedBotId;
   LatLng? _selectedBotPosition;
   StreamSubscription<DatabaseEvent>? _sub;
   bool _showBotList = false;
+  String? _currentUserRole;
+  String? _currentUserId;
+  Set<String> _allowedBotIds = {};
 
   @override
   void initState() {
     super.initState();
-    _listenToRealtimebots();
+    _initializeUser();
   }
 
   @override
   void dispose() {
     _sub?.cancel();
     super.dispose();
+  }
+
+  Future<void> _initializeUser() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      _currentUserId = user.uid;
+      await _getUserRole();
+      await _getAllowedBotIds();
+      _listenToRealtimebots();
+    }
+  }
+
+  Future<void> _getUserRole() async {
+    try {
+      final userDoc = await _firestore
+          .collection('users')
+          .doc(_currentUserId)
+          .get();
+      if (userDoc.exists) {
+        _currentUserRole = userDoc.data()?['role'];
+      }
+    } catch (e) {
+      print('Error getting user role: $e');
+    }
+  }
+
+  Future<void> _getAllowedBotIds() async {
+    try {
+      if (_currentUserRole == 'admin') {
+        // For admin: get bots where owner_admin_id equals current user ID
+        final querySnapshot = await _firestore
+            .collection('bots')
+            .where('owner_admin_id', isEqualTo: _currentUserId)
+            .get();
+
+        _allowedBotIds = querySnapshot.docs.map((doc) => doc.id).toSet();
+      } else if (_currentUserRole == 'field_operator') {
+        // For field operator: get bots where assigned_to equals current user ID
+        final querySnapshot = await _firestore
+            .collection('bots')
+            .where('assigned_to', isEqualTo: _currentUserId)
+            .get();
+
+        _allowedBotIds = querySnapshot.docs.map((doc) => doc.id).toSet();
+      }
+      print('Allowed bot IDs: $_allowedBotIds');
+    } catch (e) {
+      print('Error getting allowed bot IDs: $e');
+    }
+  }
+
+  Future<String> _getAddressFromCoordinates(double lat, double lng) async {
+    try {
+      final url =
+          'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=$lat&lon=$lng';
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['display_name'] ?? 'Address not found';
+      } else {
+        return 'Unable to get address';
+      }
+    } catch (e) {
+      print('Error getting address: $e');
+      return 'Address unavailable';
+    }
   }
 
   void _listenToRealtimebots() {
@@ -47,6 +124,7 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
             setState(() {
               _botLocations.clear();
               _botDetails.clear();
+              _botAddresses.clear();
               _selectedBotId = null;
               _selectedBotPosition = null;
             });
@@ -58,6 +136,13 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
         final updatedDetails = <String, Map<String, dynamic>>{};
 
         botsData.forEach((key, value) {
+          final botId = key.toString();
+
+          // Filter bots based on user role and permissions
+          if (!_allowedBotIds.contains(botId)) {
+            return; // Skip this bot if user doesn't have permission
+          }
+
           if (value is Map) {
             final lat = value['lat'];
             final lng = value['lng'];
@@ -65,18 +150,31 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
             if (lat != null && lng != null) {
               final latDouble = (lat as num).toDouble();
               final lngDouble = (lng as num).toDouble();
-              updatedLocations[key.toString()] = LatLng(latDouble, lngDouble);
-              updatedDetails[key.toString()] = {
-                'name': value['name'] ?? 'Bot $key',
+              updatedLocations[botId] = LatLng(latDouble, lngDouble);
+              updatedDetails[botId] = {
+                'name': value['name'] ?? 'Bot $botId',
                 'status': value['status'] ?? 'unknown',
                 'active': value['active'] ?? false,
                 'battery': value['battery'] ?? 0,
-                'speed': value['speed'] ?? 0.0,
                 'lastUpdate': DateTime.now().millisecondsSinceEpoch,
               };
-              print('✅ Bot $key → lat: $latDouble, lng: $lngDouble');
+
+              // Get address for new bot locations or if position changed significantly
+              if (!_botAddresses.containsKey(botId)) {
+                _getAddressFromCoordinates(latDouble, lngDouble).then((
+                  address,
+                ) {
+                  if (mounted) {
+                    setState(() {
+                      _botAddresses[botId] = address;
+                    });
+                  }
+                });
+              }
+
+              print('✅ Bot $botId → lat: $latDouble, lng: $lngDouble');
             } else {
-              print('⚠️ Bot $key has missing lat/lng');
+              print('⚠️ Bot $botId has missing lat/lng');
             }
           }
         });
@@ -134,6 +232,19 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
     final botDetail = _botDetails[botId];
     if (botDetail == null) return;
 
+    // Get fresh address if not available
+    if (!_botAddresses.containsKey(botId)) {
+      _getAddressFromCoordinates(position.latitude, position.longitude).then((
+        address,
+      ) {
+        if (mounted) {
+          setState(() {
+            _botAddresses[botId] = address;
+          });
+        }
+      });
+    }
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -149,6 +260,7 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
   ) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final address = _botAddresses[botId] ?? 'Loading address...';
 
     return Container(
       margin: const EdgeInsets.all(16),
@@ -256,8 +368,15 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
           _buildDetailCard([
             _buildInfoRow(
               Icons.location_on_rounded,
-              'Position',
+              'Coordinates',
               '${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)}',
+              isMultiline: true,
+            ),
+            _buildInfoRow(
+              Icons.place_rounded,
+              'Address',
+              address,
+              isMultiline: true,
             ),
             _buildInfoRow(
               Icons.info_outline_rounded,
@@ -268,11 +387,6 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
               Icons.battery_full_rounded,
               'Battery',
               '${details['battery']}%',
-            ),
-            _buildInfoRow(
-              Icons.speed_rounded,
-              'Speed',
-              '${details['speed']} knots',
             ),
           ], colorScheme),
           const SizedBox(height: 24),
@@ -336,32 +450,73 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
+  Widget _buildInfoRow(
+    IconData icon,
+    String label,
+    String value, {
+    bool isMultiline = false,
+  }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: colorScheme.primary),
-          const SizedBox(width: 12),
-          Text(
-            '$label:',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: colorScheme.onSurface,
+      child: isMultiline
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(icon, size: 20, color: colorScheme.primary),
+                    const SizedBox(width: 12),
+                    Text(
+                      '$label:',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.only(left: 32),
+                  child: Text(
+                    value,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurface.withOpacity(0.8),
+                    ),
+                    maxLines: null,
+                    overflow: TextOverflow.visible,
+                    softWrap: true,
+                  ),
+                ),
+              ],
+            )
+          : Row(
+              children: [
+                Icon(icon, size: 20, color: colorScheme.primary),
+                const SizedBox(width: 12),
+                Text(
+                  '$label:',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                const Spacer(),
+                Flexible(
+                  child: Text(
+                    value,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurface.withOpacity(0.8),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.end,
+                  ),
+                ),
+              ],
             ),
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurface.withOpacity(0.8),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
