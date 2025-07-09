@@ -151,7 +151,9 @@ class _LocationInfoCardState extends State<LocationInfoCard> {
         final city = data['city']?.toString() ?? '';
         final principalSubdivision =
             data['principalSubdivision']?.toString() ?? '';
-        final countryName = _cleanCountryName(data['countryName']?.toString() ?? '');
+        final countryName = _cleanCountryName(
+          data['countryName']?.toString() ?? '',
+        );
 
         // Get sublocality from administrative array safely
         String sublocality = '';
@@ -175,9 +177,9 @@ class _LocationInfoCardState extends State<LocationInfoCard> {
           addressParts.add(sublocality);
         }
 
-        if (city.isNotEmpty && 
-            city != locality && 
-            city != sublocality && 
+        if (city.isNotEmpty &&
+            city != locality &&
+            city != sublocality &&
             !_isGenericDescription(city)) {
           addressParts.add(city);
         }
@@ -215,7 +217,7 @@ class _LocationInfoCardState extends State<LocationInfoCard> {
   // Helper method to clean up country names
   String _cleanCountryName(String countryName) {
     if (countryName.isEmpty) return countryName;
-    
+
     // Remove common parenthetical additions like "(the)"
     return countryName
         .replaceAll(RegExp(r'\s*\(the\)\s*', caseSensitive: false), '')

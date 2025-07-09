@@ -76,7 +76,7 @@ class StatsOverviewWidget extends StatelessWidget {
           ];
 
     return SizedBox(
-      height: 120,
+      height: 160,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: stats.length,
@@ -98,8 +98,9 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 180,
-      padding: const EdgeInsets.all(16),
+      width: 200,
+      height: 140,
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: theme.colorScheme.background,
         borderRadius: BorderRadius.circular(16),
@@ -114,24 +115,25 @@ class _StatCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: (stat['color'] as Color).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
                   stat['icon'] as IconData,
-                  size: 16,
+                  size: 18,
                   color: stat['color'] as Color,
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color:
                       (stat['isPositive'] as bool ? Colors.green : Colors.red)
@@ -141,7 +143,7 @@ class _StatCard extends StatelessWidget {
                 child: Text(
                   stat['change'] as String,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    fontSize: 10,
+                    fontSize: 11,
                     color: stat['isPositive'] as bool
                         ? Colors.green[700]
                         : Colors.red[700],
@@ -151,37 +153,41 @@ class _StatCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text.rich(
-            TextSpan(
-              children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text.rich(
                 TextSpan(
-                  text: stat['value'] as String,
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    color: theme.colorScheme.onBackground,
-                  ),
+                  children: [
+                    TextSpan(
+                      text: stat['value'] as String,
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w800,
+                        color: theme.colorScheme.onBackground,
+                      ),
+                    ),
+                    TextSpan(
+                      text: ' ${stat['unit']}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontSize: 13,
+                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
-                TextSpan(
-                  text: ' ${stat['unit']}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontSize: 12,
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
-                    fontWeight: FontWeight.w500,
-                  ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                stat['title'] as String,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontSize: 13,
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  fontWeight: FontWeight.w500,
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            stat['title'] as String,
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontSize: 12,
-              color: theme.colorScheme.onSurface.withOpacity(0.7),
-              fontWeight: FontWeight.w500,
-            ),
+              ),
+            ],
           ),
         ],
       ),
