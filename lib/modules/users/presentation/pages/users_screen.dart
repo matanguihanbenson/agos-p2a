@@ -13,7 +13,7 @@ class _UsersScreenState extends State<UsersScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   bool _showActiveOnly = false;
-  bool _isGridView = false;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -50,25 +50,6 @@ class _UsersScreenState extends State<UsersScreen> {
           ],
         ),
         actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 4),
-            decoration: BoxDecoration(
-              color: _isGridView
-                  ? colorScheme.primary.withOpacity(0.1)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: IconButton(
-              icon: Icon(
-                _isGridView ? Icons.view_list_rounded : Icons.grid_view_rounded,
-                color: _isGridView
-                    ? colorScheme.primary
-                    : colorScheme.onSurface.withOpacity(0.7),
-              ),
-              onPressed: () => setState(() => _isGridView = !_isGridView),
-              tooltip: _isGridView ? 'List View' : 'Grid View',
-            ),
-          ),
           PopupMenuButton(
             icon: Icon(
               Icons.more_vert_rounded,
@@ -262,9 +243,8 @@ class _UsersScreenState extends State<UsersScreen> {
           );
         }
 
-        return _isGridView
-            ? _buildGridView(users, colorScheme)
-            : _buildListView(users, colorScheme);
+        // Always use list view
+        return _buildListView(users, colorScheme);
       },
     );
   }
@@ -305,29 +285,6 @@ class _UsersScreenState extends State<UsersScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildGridView(
-    List<QueryDocumentSnapshot> users,
-    ColorScheme colorScheme,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: GridView.builder(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 1.4,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-        ),
-        itemCount: users.length,
-        itemBuilder: (context, index) {
-          final doc = users[index];
-          final data = doc.data() as Map<String, dynamic>;
-          return _buildUserCard(doc, data, colorScheme);
-        },
       ),
     );
   }
@@ -590,16 +547,6 @@ class _UsersScreenState extends State<UsersScreen> {
                   ],
                 ),
               ),
-              PopupMenuItem(
-                value: 'delete',
-                child: Row(
-                  children: [
-                    Icon(Icons.delete_outline, color: Colors.red.shade600),
-                    const SizedBox(width: 8),
-                    const Text('Delete'),
-                  ],
-                ),
-              ),
             ],
             onSelected: (value) {
               switch (value) {
@@ -608,9 +555,6 @@ class _UsersScreenState extends State<UsersScreen> {
                   break;
                 case 'toggle':
                   _toggleUserStatus(doc.id, !(data['isActive'] ?? true));
-                  break;
-                case 'delete':
-                  _showDeleteDialog(context, doc.id);
                   break;
               }
             },
@@ -652,44 +596,6 @@ class _UsersScreenState extends State<UsersScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text('Error updating user status: $e')));
     }
-  }
-
-  void _showDeleteDialog(BuildContext context, String userId) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete User'),
-        content: const Text(
-          'Are you sure you want to delete this user? This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              try {
-                await FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(userId)
-                    .delete();
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('User deleted successfully')),
-                );
-              } catch (e) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error deleting user: $e')),
-                );
-              }
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
   }
 
   void _showUserDialog(BuildContext context, [DocumentSnapshot? userDoc]) {
@@ -828,6 +734,10 @@ class _UsersScreenState extends State<UsersScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
+                // Prevent double tap by disabling the button after first tap
+                if (_isSubmitting) return;
+                setState(() => _isSubmitting = true);
+
                 if (firstNameController.text.isEmpty ||
                     emailController.text.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -835,6 +745,7 @@ class _UsersScreenState extends State<UsersScreen> {
                       content: Text('Please fill in required fields'),
                     ),
                   );
+                  setState(() => _isSubmitting = false);
                   return;
                 }
 
@@ -846,6 +757,7 @@ class _UsersScreenState extends State<UsersScreen> {
                       content: Text('Error: No authenticated admin user'),
                     ),
                   );
+                  setState(() => _isSubmitting = false);
                   return;
                 }
 
@@ -896,6 +808,8 @@ class _UsersScreenState extends State<UsersScreen> {
                       backgroundColor: Colors.red,
                     ),
                   );
+                } finally {
+                  if (mounted) setState(() => _isSubmitting = false);
                 }
               },
               child: Text(isEditing ? 'Update' : 'Create'),
