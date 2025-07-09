@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -25,16 +26,33 @@ class _BotDetailsPageState extends State<BotDetailsPage>
   late final BotDetailsController _controller;
   late final TabController _tabController;
 
+  // Add stream subscription for real-time updates
+  StreamSubscription<DocumentSnapshot>? _docSubscription;
+  Map<String, dynamic>? _currentBotData;
+
   @override
   void initState() {
     super.initState();
     _controller = BotDetailsController(botId: widget.doc.id)
       ..addListener(() => setState(() {}));
     _tabController = TabController(length: 2, vsync: this);
+
+    // Initialize current data
+    _currentBotData = widget.doc.data() as Map<String, dynamic>;
+
+    // Listen to real-time updates
+    _docSubscription = widget.doc.reference.snapshots().listen((snapshot) {
+      if (snapshot.exists && mounted) {
+        setState(() {
+          _currentBotData = snapshot.data() as Map<String, dynamic>;
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
+    _docSubscription?.cancel();
     _controller.dispose();
     _tabController.dispose();
     super.dispose();
@@ -44,7 +62,8 @@ class _BotDetailsPageState extends State<BotDetailsPage>
   Widget build(BuildContext context) {
     final realtime = _controller.realtimeData;
     final isAdmin = _controller.isAdmin;
-    final firestoreData = widget.doc.data()! as Map<String, dynamic>;
+    final firestoreData =
+        _currentBotData ?? (widget.doc.data()! as Map<String, dynamic>);
 
     final name = (firestoreData['name'] as String?)?.trim();
     final displayName = (name != null && name.isNotEmpty)
@@ -67,12 +86,9 @@ class _BotDetailsPageState extends State<BotDetailsPage>
         child: Column(
           children: [
             const SizedBox(height: 16),
-            
+
             // Assignment card
-            AssignmentCard(
-              assignedUid: assignedUid,
-              cs: cs,
-            ),
+            AssignmentCard(assignedUid: assignedUid, cs: cs),
 
             // Status overview
             Padding(
