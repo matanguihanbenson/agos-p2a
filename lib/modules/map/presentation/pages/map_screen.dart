@@ -12,7 +12,11 @@ class _MapScreenState extends State<MapScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Bot Tracker')),
+      
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: const Text('Bot Tracker')
+      ),
       body: const BotTrackingMap(),
     );
   }
