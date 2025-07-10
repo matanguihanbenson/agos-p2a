@@ -30,6 +30,7 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
   LatLng? _selectedBotPosition;
   StreamSubscription<DatabaseEvent>? _sub;
   bool _showBotList = false;
+  bool _isBotListExpanded = false; // Add this line
   String? _currentUserRole;
   String? _currentUserId;
   Set<String> _allowedBotIds = {};
@@ -595,6 +596,218 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
     );
   }
 
+  Widget _buildControlPanel() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: colorScheme.surface.withOpacity(0.95),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildControlButton(
+            icon: Icons.add_rounded,
+            onPressed: () => _mapController.move(
+              _mapController.camera.center,
+              _mapController.camera.zoom + 1,
+            ),
+            colorScheme: colorScheme,
+          ),
+          const SizedBox(height: 8),
+          _buildControlButton(
+            icon: Icons.remove_rounded,
+            onPressed: () => _mapController.move(
+              _mapController.camera.center,
+              _mapController.camera.zoom - 1,
+            ),
+            colorScheme: colorScheme,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildControlButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+    required ColorScheme colorScheme,
+  }) {
+    return Material(
+      color: colorScheme.surface,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
+          ),
+          child: Icon(icon, color: colorScheme.primary, size: 20),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBotListPanel() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      height: _isBotListExpanded ? 300 : 0,
+      width: 250,
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: colorScheme.surface.withOpacity(0.95),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: _isBotListExpanded
+          ? Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withOpacity(0.1),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.directions_boat_rounded,
+                        color: colorScheme.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Bots (${_botLocations.length})',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(8),
+                    itemCount: _botLocations.length,
+                    itemBuilder: (context, index) {
+                      final entry = _botLocations.entries.elementAt(index);
+                      final botId = entry.key;
+                      final position = entry.value;
+                      final details = _botDetails[botId];
+                      final botName = _botNames[botId] ?? 'Bot $botId';
+                      final isActive = details?['active'] == true;
+                      final battery = details?['battery'] ?? 0;
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 4),
+                        decoration: BoxDecoration(
+                          color: _selectedBotId == botId
+                              ? colorScheme.primary.withOpacity(0.1)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                          border: _selectedBotId == botId
+                              ? Border.all(color: colorScheme.primary.withOpacity(0.3))
+                              : null,
+                        ),
+                        child: ListTile(
+                          dense: true,
+                          leading: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: isActive
+                                    ? [const Color(0xFF4CAF50), const Color(0xFF2E7D32)]
+                                    : [const Color(0xFFE57373), const Color(0xFFD32F2F)],
+                              ),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.directions_boat_rounded,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                          ),
+                          title: Text(
+                            botName,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: Row(
+                            children: [
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  color: isActive
+                                      ? const Color(0xFF4CAF50)
+                                      : const Color(0xFFE57373),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${battery}% • ${isActive ? 'Active' : 'Offline'}',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  fontSize: 10,
+                                  color: colorScheme.onSurface.withOpacity(0.7),
+                                ),
+                              ),
+                            ],
+                          ),
+                          onTap: () {
+                            setState(() {
+                              _selectedBotId = botId;
+                              _selectedBotPosition = position;
+                              _isBotListExpanded = false;
+                            });
+                            _mapController.move(position, 16);
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            )
+          : null,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -681,6 +894,7 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
                 setState(() {
                   _selectedBotId = null;
                   _selectedBotPosition = null;
+                  _isBotListExpanded = false;
                 });
               },
             ),
@@ -692,6 +906,13 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
               MarkerLayer(markers: markers),
               MarkerLayer(markers: labelMarkers),
             ],
+          ),
+
+          // Zoom controls (left side)
+          Positioned(
+            top: 30,
+            left: 16,
+            child: _buildControlPanel(),
           ),
 
           // Floating recenter button
@@ -711,43 +932,65 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
               ),
             ),
           ),
-          // Bot counter badge
+
+          // Bot list panel (top right)
           if (_botLocations.isNotEmpty)
             Positioned(
-              top: 16,
+              top: 30,
               right: 16,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: colorScheme.surface.withOpacity(0.95),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.directions_boat_rounded,
-                      size: 16,
-                      color: colorScheme.primary,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '${_botLocations.length}',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.onSurface,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  _buildBotListPanel(),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _isBotListExpanded = !_isBotListExpanded;
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surface.withOpacity(0.95),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.directions_boat_rounded,
+                            size: 16,
+                            color: colorScheme.primary,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${_botLocations.length}',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            _isBotListExpanded 
+                                ? Icons.keyboard_arrow_up 
+                                : Icons.keyboard_arrow_down,
+                            size: 16,
+                            color: colorScheme.onSurface.withOpacity(0.6),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
         ],
