@@ -25,6 +25,7 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
   Map<String, LatLng> _botLocations = {};
   Map<String, Map<String, dynamic>> _botDetails = {};
   Map<String, String> _botAddresses = {};
+  Map<String, String> _botNames = {};
   String? _selectedBotId;
   LatLng? _selectedBotPosition;
   StreamSubscription<DatabaseEvent>? _sub;
@@ -57,10 +58,7 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
 
   Future<void> _getUserRole() async {
     try {
-      final userDoc = await _firestore
-          .collection('users')
-          .doc(_currentUserId)
-          .get();
+      final userDoc = await _firestore.collection('users').doc(_currentUserId).get();
       if (userDoc.exists) {
         _currentUserRole = userDoc.data()?['role'];
       }
@@ -72,23 +70,30 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
   Future<void> _getAllowedBotIds() async {
     try {
       if (_currentUserRole == 'admin') {
-        // For admin: get bots where owner_admin_id equals current user ID
         final querySnapshot = await _firestore
             .collection('bots')
             .where('owner_admin_id', isEqualTo: _currentUserId)
             .get();
 
         _allowedBotIds = querySnapshot.docs.map((doc) => doc.id).toSet();
+
+        for (var doc in querySnapshot.docs) {
+          _botNames[doc.id] = doc.data()['name'] ?? 'Bot ${doc.id}';
+        }
       } else if (_currentUserRole == 'field_operator') {
-        // For field operator: get bots where assigned_to equals current user ID
         final querySnapshot = await _firestore
             .collection('bots')
             .where('assigned_to', isEqualTo: _currentUserId)
             .get();
 
         _allowedBotIds = querySnapshot.docs.map((doc) => doc.id).toSet();
+
+        for (var doc in querySnapshot.docs) {
+          _botNames[doc.id] = doc.data()['name'] ?? 'Bot ${doc.id}';
+        }
       }
       print('Allowed bot IDs: $_allowedBotIds');
+      print('Bot names: $_botNames');
     } catch (e) {
       print('Error getting allowed bot IDs: $e');
     }
@@ -99,7 +104,6 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
       final url =
           'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=$lat&lon=$lng';
       final response = await http.get(Uri.parse(url));
-
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return data['display_name'] ?? 'Address not found';
@@ -113,13 +117,11 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
   }
 
   void _listenToRealtimebots() {
-    // Use onValue with a more aggressive listener for real-time updates
     _sub = _botsRef.onValue.listen(
       (event) {
         final botsData = event.snapshot.value as Map<dynamic, dynamic>?;
 
         if (botsData == null) {
-          print('No bot data found.');
           if (mounted) {
             setState(() {
               _botLocations.clear();
@@ -138,10 +140,7 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
         botsData.forEach((key, value) {
           final botId = key.toString();
 
-          // Filter bots based on user role and permissions
-          if (!_allowedBotIds.contains(botId)) {
-            return; // Skip this bot if user doesn't have permission
-          }
+          if (!_allowedBotIds.contains(botId)) return;
 
           if (value is Map) {
             final lat = value['lat'];
@@ -159,11 +158,8 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
                 'lastUpdate': DateTime.now().millisecondsSinceEpoch,
               };
 
-              // Get address for new bot locations or if position changed significantly
               if (!_botAddresses.containsKey(botId)) {
-                _getAddressFromCoordinates(latDouble, lngDouble).then((
-                  address,
-                ) {
+                _getAddressFromCoordinates(latDouble, lngDouble).then((address) {
                   if (mounted) {
                     setState(() {
                       _botAddresses[botId] = address;
@@ -171,22 +167,14 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
                   }
                 });
               }
-
-              print('✅ Bot $botId → lat: $latDouble, lng: $lngDouble');
-            } else {
-              print('⚠️ Bot $botId has missing lat/lng');
             }
           }
         });
-
-        print('🛰 Final updatedLocations: $updatedLocations');
 
         if (mounted) {
           setState(() {
             _botLocations = updatedLocations;
             _botDetails = updatedDetails;
-
-            // Only auto-select first bot if none is selected and locations exist
             if (_botLocations.isNotEmpty && _selectedBotId == null) {
               final first = _botLocations.entries.first;
               _selectedBotId = first.key;
@@ -194,19 +182,16 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
               _mapController.move(first.value, 14);
             } else if (_selectedBotId != null &&
                 !_botLocations.containsKey(_selectedBotId)) {
-              // If selected bot is no longer available, clear selection
               _selectedBotId = null;
               _selectedBotPosition = null;
             } else if (_selectedBotId != null &&
                 _botLocations.containsKey(_selectedBotId!)) {
-              // Update selected bot position if it exists
               _selectedBotPosition = _botLocations[_selectedBotId!];
             }
           });
         }
       },
       onError: (error) {
-        print('❌ Error listening to bot data: $error');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -232,11 +217,8 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
     final botDetail = _botDetails[botId];
     if (botDetail == null) return;
 
-    // Get fresh address if not available
     if (!_botAddresses.containsKey(botId)) {
-      _getAddressFromCoordinates(position.latitude, position.longitude).then((
-        address,
-      ) {
+      _getAddressFromCoordinates(position.latitude, position.longitude).then((address) {
         if (mounted) {
           setState(() {
             _botAddresses[botId] = address;
@@ -279,7 +261,6 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Handle bar
           Container(
             width: 40,
             height: 4,
@@ -289,7 +270,6 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
             ),
           ),
           const SizedBox(height: 20),
-          // Header
           Row(
             children: [
               Container(
@@ -364,7 +344,6 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
             ],
           ),
           const SizedBox(height: 24),
-          // Details
           _buildDetailCard([
             _buildInfoRow(
               Icons.location_on_rounded,
@@ -390,7 +369,6 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
             ),
           ], colorScheme),
           const SizedBox(height: 24),
-          // Action buttons
           Row(
             children: [
               Expanded(
@@ -520,76 +498,8 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
     );
   }
 
-  Widget _buildControlPanel() {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: colorScheme.surface.withOpacity(0.95),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildControlButton(
-            icon: Icons.add_rounded,
-            onPressed: () => _mapController.move(
-              _mapController.camera.center,
-              _mapController.camera.zoom + 1,
-            ),
-            colorScheme: colorScheme,
-          ),
-          const SizedBox(height: 8),
-          _buildControlButton(
-            icon: Icons.remove_rounded,
-            onPressed: () => _mapController.move(
-              _mapController.camera.center,
-              _mapController.camera.zoom - 1,
-            ),
-            colorScheme: colorScheme,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildControlButton({
-    required IconData icon,
-    required VoidCallback onPressed,
-    required ColorScheme colorScheme,
-  }) {
-    return Material(
-      color: colorScheme.surface,
-      borderRadius: BorderRadius.circular(8),
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
-          ),
-          child: Icon(icon, color: colorScheme.primary, size: 20),
-        ),
-      ),
-    );
-  }
-
   void _recenterToNearestBot() {
     if (_botLocations.isEmpty) return;
-
     final currentCenter = _mapController.camera.center;
 
     String? nearestId;
@@ -618,10 +528,77 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildBotLabel(String botId, LatLng position) {
+    final details = _botDetails[botId];
+    final botName = _botNames[botId] ?? 'Bot $botId';
+    final isActive = details?['active'] == true;
+    final battery = details?['battery'] ?? 0;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: colorScheme.surface.withOpacity(0.95),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isActive ? const Color(0xFF4CAF50) : const Color(0xFFE57373),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            botName,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurface,
+              fontSize: 10,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: isActive
+                      ? const Color(0xFF4CAF50)
+                      : const Color(0xFFE57373),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '${battery}%',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurface.withOpacity(0.8),
+                  fontSize: 10,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
 
     final markers = _botLocations.entries.map((entry) {
       final botId = entry.key;
@@ -667,82 +644,114 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
       );
     }).toList();
 
-    return Stack(
-      children: [
-        FlutterMap(
-          mapController: _mapController,
-          options: MapOptions(
-            initialCenter: LatLng(13.413, 121.180),
-            initialZoom: 12,
-            interactionOptions: const InteractionOptions(
-              flags: InteractiveFlag.all,
-            ),
-          ),
-          children: [
-            TileLayer(
-              urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-              subdomains: ['a', 'b', 'c'],
-            ),
-            MarkerLayer(markers: markers),
-          ],
+    // Create label markers positioned below bot markers with dynamic offset based on zoom
+    final labelMarkers = _botLocations.entries.map((entry) {
+      final botId = entry.key;
+      final position = entry.value;
+      final currentZoom = _mapController.camera.zoom;
+      
+      // Calculate dynamic offset based on zoom level - more offset at higher zoom levels
+      final latOffset = 0.0001 * (21 - currentZoom).clamp(1, 15);
+      
+      return Marker(
+        point: LatLng(
+          position.latitude - latOffset,
+          position.longitude,
         ),
-        Positioned(top: 16, left: 16, child: _buildControlPanel()),
-        Positioned(
-          bottom: 16,
-          right: 16,
-          child: FloatingActionButton.extended(
-            heroTag: 'recenter',
-            onPressed: _recenterToNearestBot,
-            label: const Text('Recenter'),
-            icon: const Icon(Icons.center_focus_strong_rounded),
-            backgroundColor: colorScheme.primary,
-            foregroundColor: colorScheme.onPrimary,
-            elevation: 4,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
+        width: 120,
+        height: 50,
+        child: Center(
+          child: GestureDetector(
+            onTap: () => _onBotTap(botId, position),
+            child: _buildBotLabel(botId, position),
           ),
         ),
-        // Bot counter badge
-        if (_botLocations.isNotEmpty)
+      );
+    }).toList();
+
+    return Scaffold(
+      body: Stack(
+        children: [
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: _selectedBotPosition ?? LatLng(13.4024, 122.5632),
+              initialZoom: 13,
+              onTap: (tapPosition, point) {
+                setState(() {
+                  _selectedBotId = null;
+                  _selectedBotPosition = null;
+                });
+              },
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                subdomains: const ['a', 'b', 'c'],
+              ),
+              MarkerLayer(markers: markers),
+              MarkerLayer(markers: labelMarkers),
+            ],
+          ),
+
+          // Floating recenter button
           Positioned(
-            top: 16,
             right: 16,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: colorScheme.surface.withOpacity(0.95),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.directions_boat_rounded,
-                    size: 16,
-                    color: colorScheme.primary,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '${_botLocations.length}',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                ],
+            bottom: 24,
+            child: FloatingActionButton.extended(
+              heroTag: 'recenter',
+              onPressed: _recenterToNearestBot,
+              label: const Text('Recenter'),
+              icon: const Icon(Icons.center_focus_strong_rounded),
+              backgroundColor: colorScheme.primary,
+              foregroundColor: colorScheme.onPrimary,
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
             ),
           ),
-      ],
+          // Bot counter badge
+          if (_botLocations.isNotEmpty)
+            Positioned(
+              top: 16,
+              right: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: colorScheme.surface.withOpacity(0.95),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.directions_boat_rounded,
+                      size: 16,
+                      color: colorScheme.primary,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${_botLocations.length}',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
