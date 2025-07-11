@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../domain/models/user_profile.dart';
+import '../../../../core/models/user_model.dart';
 
 class ProfileInfoCards extends StatelessWidget {
   final UserProfile userProfile;

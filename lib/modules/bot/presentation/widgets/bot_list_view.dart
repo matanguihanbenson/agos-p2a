@@ -27,7 +27,8 @@ class BotListView extends StatelessWidget {
             doc: doc,
             index: i,
             isGrid: false,
-            onLiveFeed: () => onLiveFeed?.call(doc),
+            onLiveFeed: () =>
+                Navigator.pushNamed(context, '/live-feed', arguments: doc),
             onControl: () => onControl?.call(doc),
           ),
         );

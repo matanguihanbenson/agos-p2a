@@ -31,7 +31,8 @@ class BotGridView extends StatelessWidget {
           doc: doc,
           index: i,
           isGrid: true,
-          onLiveFeed: () => onLiveFeed?.call(doc),
+          onLiveFeed: () =>
+              Navigator.pushNamed(context, '/live-feed', arguments: doc),
           onControl: () => onControl?.call(doc),
         );
       },

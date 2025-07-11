@@ -7,6 +7,8 @@ import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
+import 'package:flutter/foundation.dart';
+import 'safe_map_wrapper.dart';
 
 class BotTrackingMap extends StatefulWidget {
   const BotTrackingMap({super.key});
@@ -19,7 +21,7 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
   final DatabaseReference _botsRef = FirebaseDatabase.instance.ref('bots');
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final MapController _mapController = MapController();
+  MapController? _mapController;
   final Distance _distance = const Distance();
 
   Map<String, LatLng> _botLocations = {};
@@ -30,13 +32,14 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
   LatLng? _selectedBotPosition;
   StreamSubscription<DatabaseEvent>? _sub;
   bool _showBotList = false;
-  bool _isBotListExpanded = false; // Add this line
+  bool _isBotListExpanded = false;
   String? _currentUserRole;
   String? _currentUserId;
   Set<String> _allowedBotIds = {};
 
   bool _isMapLoading = true;
   String? _mapError;
+  bool _isMapInitialized = false;
 
   @override
   void initState() {
@@ -100,7 +103,6 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
           _botNames[doc.id] = doc.data()['name'] ?? 'Bot ${doc.id}';
         }
       } else {
-        // For other roles or if role is not recognized, show no bots
         _allowedBotIds = <String>{};
         _botNames = <String, String>{};
       }
@@ -110,29 +112,38 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
       print('Allowed bot IDs: $_allowedBotIds');
       print('Bot names: $_botNames');
 
-      // If no bots are found for field operator, show a message
       if (_currentUserRole == 'field_operator' && _allowedBotIds.isEmpty) {
         print('No bots assigned to this field operator');
       }
     } catch (e) {
       print('Error getting allowed bot IDs: $e');
-      // Reset to empty sets on error
       _allowedBotIds = <String>{};
       _botNames = <String, String>{};
     }
+  }
+
+  String _proxiedUrl(String url) {
+    if (kIsWeb) {
+      return 'https://api.allorigins.win/raw?url=${Uri.encodeComponent(url)}';
+    }
+    return url;
   }
 
   Future<String> _getAddressFromCoordinates(double lat, double lng) async {
     try {
       final url =
           'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=$lat&lon=$lng';
-      final response = await http.get(Uri.parse(url));
+      final proxiedUrl = _proxiedUrl(url);
+      final response = await http.get(Uri.parse(proxiedUrl));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return data['display_name'] ?? 'Address not found';
       } else {
         return 'Unable to get address';
       }
+    } on http.ClientException catch (e) {
+      print('Network error getting address: $e');
+      return 'Address unavailable (network error)';
     } catch (e) {
       print('Error getting address: $e');
       return 'Address unavailable';
@@ -163,7 +174,6 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
         botsData.forEach((key, value) {
           final botId = key.toString();
 
-          // Only process bots that are in the allowed list for this user
           if (!_allowedBotIds.contains(botId)) {
             print(
               'Bot $botId not in allowed list for user $_currentUserId (role: $_currentUserRole)',
@@ -210,7 +220,7 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
               final first = _botLocations.entries.first;
               _selectedBotId = first.key;
               _selectedBotPosition = first.value;
-              _mapController.move(first.value, 14);
+              _moveMapSafely(first.value, 14);
             } else if (_selectedBotId != null &&
                 !_botLocations.containsKey(_selectedBotId)) {
               _selectedBotId = null;
@@ -266,6 +276,23 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
       isScrollControlled: true,
       builder: (context) => _buildBotDetailSheet(botId, position, botDetail),
     );
+  }
+
+  void _moveMapSafely(LatLng position, double zoom) {
+    if (!mounted || !_isMapInitialized || _mapController == null) {
+      print('MapController not ready for movement');
+      return;
+    }
+
+    try {
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (mounted && _isMapInitialized && _mapController != null) {
+          _mapController!.move(position, zoom);
+        }
+      });
+    } catch (e) {
+      print('MapController move error: $e');
+    }
   }
 
   Widget _buildBotDetailSheet(
@@ -408,7 +435,7 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
                 child: ElevatedButton.icon(
                   onPressed: () {
                     Navigator.pop(context);
-                    _mapController.move(position, 16);
+                    _moveMapSafely(position, 16);
                   },
                   icon: const Icon(Icons.my_location_rounded),
                   label: const Text('Follow'),
@@ -428,7 +455,15 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
                 child: OutlinedButton.icon(
                   onPressed: () {
                     Navigator.pop(context);
-                    _mapController.move(position, _mapController.camera.zoom);
+                    if (_mapController != null && _isMapInitialized) {
+                      try {
+                        _moveMapSafely(position, _mapController!.camera.zoom);
+                      } catch (e) {
+                        _moveMapSafely(position, 13);
+                      }
+                    } else {
+                      _moveMapSafely(position, 13);
+                    }
                   },
                   icon: const Icon(Icons.center_focus_strong_rounded),
                   label: const Text('Center'),
@@ -532,32 +567,41 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
   }
 
   void _recenterToNearestBot() {
-    if (_botLocations.isEmpty) return;
-    final currentCenter = _mapController.camera.center;
+    if (_botLocations.isEmpty || !_isMapInitialized || _mapController == null)
+      return;
 
-    String? nearestId;
-    double minDistance = double.infinity;
+    try {
+      final currentCenter = _mapController!.camera.center;
+      final currentZoom = _mapController!.camera.zoom;
 
-    _botLocations.forEach((id, position) {
-      final dist = _distance(currentCenter, position);
-      if (dist < minDistance) {
-        minDistance = dist;
-        nearestId = id;
+      String? nearestId;
+      double minDistance = double.infinity;
+
+      _botLocations.forEach((id, position) {
+        final dist = _distance(currentCenter, position);
+        if (dist < minDistance) {
+          minDistance = dist;
+          nearestId = id;
+        }
+      });
+
+      if (nearestId != null) {
+        final nearestPosition = _botLocations[nearestId]!;
+        _moveMapSafely(nearestPosition, currentZoom);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Recentered to nearest bot: $nearestId"),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
       }
-    });
-
-    if (nearestId != null) {
-      final nearestPosition = _botLocations[nearestId]!;
-      _mapController.move(nearestPosition, _mapController.camera.zoom);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Recentered to nearest bot: $nearestId"),
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-      );
+    } catch (e) {
+      print('Error in recenter: $e');
     }
   }
 
@@ -651,19 +695,35 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
         children: [
           _buildControlButton(
             icon: Icons.add_rounded,
-            onPressed: () => _mapController.move(
-              _mapController.camera.center,
-              _mapController.camera.zoom + 1,
-            ),
+            onPressed: () {
+              if (_mapController != null && _isMapInitialized) {
+                try {
+                  _mapController!.move(
+                    _mapController!.camera.center,
+                    _mapController!.camera.zoom + 1,
+                  );
+                } catch (e) {
+                  print('Zoom in error: $e');
+                }
+              }
+            },
             colorScheme: colorScheme,
           ),
           const SizedBox(height: 8),
           _buildControlButton(
             icon: Icons.remove_rounded,
-            onPressed: () => _mapController.move(
-              _mapController.camera.center,
-              _mapController.camera.zoom - 1,
-            ),
+            onPressed: () {
+              if (_mapController != null && _isMapInitialized) {
+                try {
+                  _mapController!.move(
+                    _mapController!.camera.center,
+                    _mapController!.camera.zoom - 1,
+                  );
+                } catch (e) {
+                  print('Zoom out error: $e');
+                }
+              }
+            },
             colorScheme: colorScheme,
           ),
         ],
@@ -835,7 +895,7 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
                               _selectedBotPosition = position;
                               _isBotListExpanded = false;
                             });
-                            _mapController.move(position, 16);
+                            _moveMapSafely(position, 16);
                           },
                         ),
                       );
@@ -849,13 +909,22 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
   }
 
   Future<void> _checkMapTiles() async {
+    if (kIsWeb) {
+      setState(() {
+        _isMapLoading = false;
+        _mapError = null;
+      });
+      return;
+    }
+
     try {
+      final url = 'https://tile.openstreetmap.org/1/0/0.png';
       final response = await http
           .get(
-            Uri.parse('https://tile.openstreetmap.org/1/0/0.png'),
-            headers: {'User-Agent': 'AgosBotTracker/1.0'},
+            Uri.parse(url),
+            headers: {'User-Agent': 'Mozilla/5.0 (compatible; Flutter app)'},
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
         setState(() {
@@ -878,11 +947,31 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
 
   @override
   Widget build(BuildContext context) {
+    if (kIsWeb) {
+      return _buildMapContent(context);
+    }
+
+    return SafeMapWrapper(
+      initialCenter: _selectedBotPosition ?? const LatLng(13.4024, 122.5632),
+      initialZoom: 13,
+      builder: (mapController) {
+        _mapController = mapController;
+        _isMapInitialized = true;
+        return _buildMapContent(context);
+      },
+    );
+  }
+
+  Widget _buildMapContent(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final theme = Theme.of(context);
 
-    // Show loading or error state
-    if (_isMapLoading) {
+    if (kIsWeb && _mapController == null) {
+      _mapController = MapController();
+      _isMapInitialized = true;
+    }
+
+    if (_isMapLoading && !kIsWeb) {
       return Scaffold(
         body: Center(
           child: Column(
@@ -897,7 +986,7 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
       );
     }
 
-    if (_mapError != null) {
+    if (_mapError != null && !kIsWeb) {
       return Scaffold(
         body: Center(
           child: Column(
@@ -937,9 +1026,8 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
       );
     }
 
-    // Show message if no bots are available for field operator
     if (_currentUserRole == 'field_operator' &&
-        _botLocations.isEmpty &&
+        _allowedBotIds.isEmpty &&
         !_isMapLoading) {
       return Scaffold(
         body: Center(
@@ -969,6 +1057,21 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
                   ),
                 ),
               ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_currentUserId == null || _currentUserRole == null) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text('Loading user data...', style: theme.textTheme.bodyLarge),
             ],
           ),
         ),
@@ -1019,13 +1122,19 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
       );
     }).toList();
 
-    // Create label markers positioned below bot markers with dynamic offset based on zoom
     final labelMarkers = _botLocations.entries.map((entry) {
       final botId = entry.key;
       final position = entry.value;
-      final currentZoom = _mapController.camera.zoom;
 
-      // Calculate dynamic offset based on zoom level - more offset at higher zoom levels
+      double currentZoom = 13.0;
+      if (_mapController != null && _isMapInitialized) {
+        try {
+          currentZoom = _mapController!.camera.zoom;
+        } catch (e) {
+          // Use default zoom if camera is not ready
+        }
+      }
+
       final latOffset = 0.0001 * (21 - currentZoom).clamp(1, 15);
 
       return Marker(
@@ -1056,6 +1165,13 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
                   _isBotListExpanded = false;
                 });
               },
+              onMapReady: () {
+                if (mounted) {
+                  setState(() {
+                    _isMapInitialized = true;
+                  });
+                }
+              },
             ),
             children: [
               TileLayer(
@@ -1068,18 +1184,20 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
                   'attribution': '© OpenStreetMap contributors',
                 },
                 errorTileCallback: (tile, error, stackTrace) {
-                  print('Tile loading error: $error');
+                  if (kDebugMode) {
+                    print('Tile loading error: $error');
+                  }
                 },
               ),
-              MarkerLayer(markers: markers),
-              MarkerLayer(markers: labelMarkers),
+              if (_botLocations.isNotEmpty) ...[
+                MarkerLayer(markers: markers),
+                MarkerLayer(markers: labelMarkers),
+              ],
             ],
           ),
 
-          // Zoom controls (left side)
           Positioned(top: 30, left: 16, child: _buildControlPanel()),
 
-          // Floating recenter button
           Positioned(
             right: 16,
             bottom: 24,
@@ -1097,7 +1215,6 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
             ),
           ),
 
-          // Bot list panel (top right)
           if (_botLocations.isNotEmpty)
             Positioned(
               top: 30,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_database/firebase_database.dart' as rtdb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/theme.dart';
 import '../../../../core/providers/user_providers.dart';
@@ -271,7 +272,7 @@ class _BotScreenState extends ConsumerState<BotScreen> {
 }
 
 // Modularized list/grid switcher for bot views
-class BotListOrGrid extends StatelessWidget {
+class BotListOrGrid extends StatefulWidget {
   final bool isGridView;
   final String userRole;
   final String userId;
@@ -289,18 +290,53 @@ class BotListOrGrid extends StatelessWidget {
     required this.searchCtrl,
   });
 
+  @override
+  State<BotListOrGrid> createState() => _BotListOrGridState();
+}
+
+class _BotListOrGridState extends State<BotListOrGrid> {
+  final rtdb.DatabaseReference _database = rtdb.FirebaseDatabase.instance.ref();
+  Map<String, Map<String, dynamic>> _realtimeData = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _subscribeToRealtimeData();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  void _subscribeToRealtimeData() {
+    _database.child('bots').onValue.listen((event) {
+      if (event.snapshot.exists && mounted) {
+        final data = event.snapshot.value as Map<dynamic, dynamic>?;
+        if (data != null) {
+          setState(() {
+            _realtimeData = data.map(
+              (key, value) =>
+                  MapEntry(key.toString(), Map<String, dynamic>.from(value)),
+            );
+          });
+        }
+      }
+    });
+  }
+
   Stream<QuerySnapshot> _getBotStream() {
     final firestore = FirebaseFirestore.instance;
     Query<Map<String, dynamic>> query;
 
-    if (userRole == 'admin') {
+    if (widget.userRole == 'admin') {
       query = firestore
           .collection('bots')
-          .where('owner_admin_id', isEqualTo: userId);
+          .where('owner_admin_id', isEqualTo: widget.userId);
     } else {
       query = firestore
           .collection('bots')
-          .where('assigned_to', isEqualTo: userId);
+          .where('assigned_to', isEqualTo: widget.userId);
     }
     return query.snapshots(includeMetadataChanges: true);
   }
@@ -309,17 +345,25 @@ class BotListOrGrid extends StatelessWidget {
     final data = doc.data()! as Map<String, dynamic>;
     final nameField = (data['name'] as String?)?.toLowerCase() ?? '';
     final idLower = doc.id.toLowerCase();
-    final searchQuery = searchCtrl.text.trim().toLowerCase();
+    final searchQuery = widget.searchCtrl.text.trim().toLowerCase();
+
+    // Search filter
     if (searchQuery.isNotEmpty &&
         !(nameField.contains(searchQuery) || idLower.contains(searchQuery))) {
       return false;
     }
-    final status = (data['status'] ?? '').toString().toLowerCase();
-    final active = (data['active'] ?? false) as bool;
-    switch (statusFilter) {
+
+    // Status filter - check real-time data first, then fallback to Firestore
+    final realtimeBot = _realtimeData[doc.id];
+    final status = (realtimeBot?['status'] ?? data['status'] ?? '')
+        .toString()
+        .toLowerCase();
+    final active = realtimeBot?['active'] ?? data['active'] ?? false;
+
+    switch (widget.statusFilter) {
       case 'deployed':
       case 'recalled':
-        return status == statusFilter;
+        return status == widget.statusFilter;
       case 'active':
         return active;
       case 'inactive':
@@ -341,34 +385,29 @@ class BotListOrGrid extends StatelessWidget {
           return BotEmptyState(
             icon: Icons.error_outline_rounded,
             message: 'Permission Error',
-            subMessage: userRole == 'admin'
+            subMessage: widget.userRole == 'admin'
                 ? 'Unable to access bot data'
                 : 'Unable to access your assigned bots',
           );
         }
         final docs = (snap.data?.docs ?? []).where(_matchesFilter).toList();
 
-        // Field operator: check that bot belongs to same admin
-        final filteredDocs =
-            userRole == 'field_operator' && createdByAdmin != null
-            ? docs.where((doc) {
-                final botData = doc.data()! as Map<String, dynamic>;
-                return botData['owner_admin_id'] == createdByAdmin;
-              }).toList()
-            : docs;
+        final filteredDocs = docs;
 
         if (filteredDocs.isEmpty) {
           return BotEmptyState(
             icon: Icons.directions_boat_rounded,
             message: 'No bots found',
-            subMessage: searchCtrl.text.isNotEmpty || statusFilter != 'All'
+            subMessage:
+                widget.searchCtrl.text.isNotEmpty ||
+                    widget.statusFilter != 'All'
                 ? 'Try adjusting your search or filter criteria'
-                : userRole == 'admin'
+                : widget.userRole == 'admin'
                 ? 'You haven\'t created any bots yet'
                 : 'No bots have been assigned to you yet',
           );
         }
-        if (isGridView) {
+        if (widget.isGridView) {
           return BotGridView(bots: filteredDocs);
         } else {
           return BotListView(bots: filteredDocs);

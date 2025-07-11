@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/providers/profile_providers.dart';
-import '../../domain/models/user_profile.dart';
+import '../../../../core/providers/user_providers.dart';
+import '../../../../core/models/user_model.dart';
 import '../widgets/profile_header.dart';
 import '../widgets/profile_info_cards.dart';
 import '../widgets/settings_section.dart';

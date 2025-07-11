@@ -5,6 +5,52 @@ class QuickActionsWidget extends StatelessWidget {
   final String userRole;
   const QuickActionsWidget({super.key, required this.userRole});
 
+  void _handleActionTap(BuildContext context, String actionLabel) {
+    switch (actionLabel) {
+      case 'Live Feed':
+        // Navigate to bot selection page for live feed
+        Navigator.pushNamed(
+          context,
+          '/bot-selection',
+          arguments: {'action': 'live-feed'},
+        );
+        break;
+      case 'Control':
+        Navigator.pushNamed(
+          context,
+          '/bot-selection',
+          arguments: {'action': 'control'},
+        );
+        break;
+      case 'Emergency Recall':
+        Navigator.pushNamed(
+          context,
+          '/bot-selection',
+          arguments: {'action': 'emergency-recall'},
+        );
+        break;
+      case 'Assign Bot':
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Assign Bot feature coming soon')),
+        );
+        break;
+      case 'Add Operator':
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Add Operator feature coming soon')),
+        );
+        break;
+      case 'New Schedule':
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('New Schedule feature coming soon')),
+        );
+        break;
+      default:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$actionLabel feature coming soon')),
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -31,22 +77,22 @@ class QuickActionsWidget extends StatelessWidget {
           ]
         : [
             {
-              'icon': Icons.undo_rounded,
-              'label': 'Emergency Recall',
-              'color': Colors.orange,
-              'subtitle': 'Emergency',
-            },
-            {
-              'icon': Icons.assignment_rounded,
-              'label': 'Assign Bot',
+              'icon': Icons.gamepad_rounded,
+              'label': 'Control',
               'color': Colors.blue,
-              'subtitle': 'Reassign',
+              'subtitle': 'Remote',
             },
             {
-              'icon': Icons.person_add_rounded,
-              'label': 'Add Operator',
-              'color': Colors.green,
-              'subtitle': 'New field',
+              'icon': Icons.schedule_rounded,
+              'label': 'New Schedule',
+              'color': Colors.purple,
+              'subtitle': 'Task',
+            },
+            {
+              'icon': Icons.videocam_rounded,
+              'label': 'Live Feed',
+              'color': Colors.red,
+              'subtitle': 'Camera',
             },
           ];
 
@@ -79,7 +125,7 @@ class QuickActionsWidget extends StatelessWidget {
               child: InkWell(
                 borderRadius: BorderRadius.circular(16),
                 onTap: () {
-                  // TODO: Handle action tap
+                  _handleActionTap(context, action['label'] as String);
                 },
                 child: Padding(
                   padding: const EdgeInsets.all(12),

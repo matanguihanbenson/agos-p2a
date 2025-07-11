@@ -29,6 +29,22 @@ class BottomNavigation extends ConsumerWidget {
       error: (error, _) =>
           Scaffold(body: Center(child: Text('Error loading role: $error'))),
       data: (role) {
+        // Wait for authentication before building screens
+        if (uid == null) {
+          return const Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Authenticating...'),
+                ],
+              ),
+            ),
+          );
+        }
+
         // Build your screens based on role
         final screens = role == 'admin'
             ? [

@@ -14,34 +14,33 @@ import '../../widgets/quick_actions_widget.dart';
 import '../../widgets/environmental_data_card.dart';
 import '../../widgets/recent_activity_widget.dart';
 
-// Add provider for user's first name
-final userFirstNameProvider = FutureProvider<String>((ref) async {
-  final user = FirebaseAuth.instance.currentUser;
-  if (user == null) return 'Guest';
+// Replace the existing userFirstNameProvider with this corrected version
+final userFirstNameProvider = StreamProvider<String>((ref) {
+  final authState = ref.watch(authStateProvider);
 
-  try {
-    final doc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .get(const GetOptions(source: Source.cache)); // Try cache first
+  return authState.when(
+    data: (user) {
+      if (user == null) return Stream.value('Guest');
 
-    if (doc.exists && doc.data() != null) {
-      return doc.data()!['firstname'] ?? 'Guest';
-    }
-
-    // Fallback to server if cache miss
-    final serverDoc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .get();
-
-    if (serverDoc.exists && serverDoc.data() != null) {
-      return serverDoc.data()!['firstname'] ?? 'Guest';
-    }
-    return 'Guest';
-  } catch (e) {
-    return 'Guest';
-  }
+      return FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .snapshots()
+          .map((doc) {
+            if (doc.exists && doc.data() != null) {
+              final firstName = doc.data()!['firstname'] as String?;
+              return firstName ?? 'Guest';
+            }
+            return 'Guest';
+          })
+          .handleError((error) {
+            print('Error fetching user first name: $error');
+            return 'Guest';
+          });
+    },
+    loading: () => Stream.value('Guest'),
+    error: (error, stack) => Stream.value('Guest'),
+  );
 });
 
 class HomePage extends ConsumerWidget {
@@ -89,16 +88,63 @@ class HomePage extends ConsumerWidget {
                     color: theme.colorScheme.primaryContainer.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: IconButton(
-                    icon: Icon(
-                      Icons.notifications_outlined,
-                      color: theme.colorScheme.primary,
-                    ),
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const NotificationScreen(),
-                        ),
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: user == null
+                        ? null
+                        : FirebaseFirestore.instance
+                              .collection('notifications')
+                              .where('recipient_id', isEqualTo: user.uid)
+                              .where('read', isEqualTo: false)
+                              .snapshots(),
+                    builder: (context, snapshot) {
+                      int unreadCount = 0;
+                      if (snapshot.hasData) {
+                        unreadCount = snapshot.data!.docs.length;
+                      }
+                      return Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          IconButton(
+                            icon: Icon(
+                              Icons.notifications_outlined,
+                              color: theme.colorScheme.primary,
+                            ),
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const NotificationScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                          if (unreadCount > 0)
+                            Positioned(
+                              right: 6,
+                              top: 6,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                                constraints: const BoxConstraints(
+                                  minWidth: 20,
+                                  minHeight: 20,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    unreadCount.toString(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       );
                     },
                   ),

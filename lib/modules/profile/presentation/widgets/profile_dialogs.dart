@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../domain/models/user_profile.dart';
+import '../../../../core/models/user_model.dart';
 
 class ProfileDialogs {
   static void showEditProfileDialog(BuildContext context, UserProfile user) {
@@ -33,9 +33,21 @@ class ProfileDialogs {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              await FirebaseAuth.instance.signOut();
-              // You might want to navigate to login here
-              Navigator.of(context).pushReplacementNamed('/login');
+
+              // Clear any cached data and sign out
+              try {
+                await FirebaseAuth.instance.signOut();
+
+                // Navigate to login and clear the navigation stack
+                if (context.mounted) {
+                  Navigator.of(
+                    context,
+                  ).pushNamedAndRemoveUntil('/login', (route) => false);
+                }
+              } catch (e) {
+                // Handle sign out error if needed
+                print('Sign out error: $e');
+              }
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Sign Out'),

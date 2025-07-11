@@ -5,9 +5,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 class AdminActions extends StatelessWidget {
   final DocumentReference docRef;
   final String? assignedTo;
+  final DocumentSnapshot? botDoc;
 
-  const AdminActions({Key? key, required this.docRef, this.assignedTo})
-    : super(key: key);
+  const AdminActions({
+    Key? key,
+    required this.docRef,
+    this.assignedTo,
+    this.botDoc,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +55,17 @@ class AdminActions extends StatelessWidget {
           children: [
             Expanded(
               child: ElevatedButton.icon(
-                onPressed: () => _showComingSoon(context, 'Live Feed'),
+                onPressed: () {
+                  if (botDoc != null) {
+                    Navigator.pushNamed(
+                      context,
+                      '/live-feed',
+                      arguments: botDoc,
+                    );
+                  } else {
+                    _showComingSoon(context, 'Live Feed');
+                  }
+                },
                 icon: const Icon(Icons.videocam_outlined, size: 18),
                 label: const Text('Live Feed'),
               ),

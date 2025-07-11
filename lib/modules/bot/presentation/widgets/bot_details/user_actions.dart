@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UserActions extends StatelessWidget {
-  const UserActions({Key? key}) : super(key: key);
+  final DocumentSnapshot? botDoc;
+
+  const UserActions({Key? key, this.botDoc}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -9,7 +12,13 @@ class UserActions extends StatelessWidget {
       children: [
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: () => _showComingSoon(context, 'Live Feed'),
+            onPressed: () {
+              if (botDoc != null) {
+                Navigator.pushNamed(context, '/live-feed', arguments: botDoc);
+              } else {
+                _showComingSoon(context, 'Live Feed');
+              }
+            },
             icon: const Icon(Icons.videocam_outlined, size: 18),
             label: const Text('Live Feed'),
           ),
