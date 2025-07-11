@@ -3,7 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../../../../core/services/location_service.dart';
+import '../../../../core/services/geocoding_service.dart';
 
 class MapLocationPicker extends StatefulWidget {
   final double initialLatitude;
@@ -32,6 +35,8 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
   late MapController _mapController;
   bool _isLoading = false;
   bool _isGettingLocation = false;
+  String? _selectedLocationAddress;
+  bool _isGeocodingAddress = false;
 
   @override
   void initState() {
@@ -40,6 +45,11 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
     _selectedLongitude = widget.initialLongitude;
     _currentRadius = widget.coverageRadius;
     _mapController = MapController();
+
+    // Get initial address
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateLocationAddress();
+    });
   }
 
   Future<void> _getCurrentLocation() async {
@@ -56,6 +66,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
         setState(() {
           _selectedLatitude = position.latitude;
           _selectedLongitude = position.longitude;
+          _selectedLocationAddress = null; // Clear previous address
         });
 
         // Move map to current location
@@ -63,6 +74,9 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
           LatLng(position.latitude, position.longitude),
           15.0,
         );
+
+        // Update address for new location
+        _updateLocationAddress();
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -116,6 +130,30 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
     }
   }
 
+  Future<String?> _reverseGeocode(double latitude, double longitude) async {
+    return await GeocodingService.reverseGeocode(latitude, longitude);
+  }
+
+  Future<void> _updateLocationAddress() async {
+    setState(() {
+      _isGeocodingAddress = true;
+    });
+
+    final address = await _reverseGeocode(
+      _selectedLatitude,
+      _selectedLongitude,
+    );
+
+    if (mounted) {
+      setState(() {
+        _selectedLocationAddress = address != null
+            ? GeocodingService.formatAddress(address)
+            : null;
+        _isGeocodingAddress = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -147,6 +185,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                       'latitude': _selectedLatitude,
                       'longitude': _selectedLongitude,
                       'radius': _currentRadius,
+                      'address': _selectedLocationAddress,
                     });
                   },
             child: _isLoading
@@ -167,12 +206,14 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
             mapController: _mapController,
             options: MapOptions(
               initialCenter: LatLng(_selectedLatitude, _selectedLongitude),
-              initialZoom: 18.0, // Increased zoom for better 100m visibility
+              initialZoom: 18.0,
               onTap: (tapPosition, point) {
                 setState(() {
                   _selectedLatitude = point.latitude;
                   _selectedLongitude = point.longitude;
+                  _selectedLocationAddress = null; // Clear previous address
                 });
+                _updateLocationAddress(); // Get new address
               },
             ),
             children: [
@@ -528,6 +569,94 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
               ),
             ],
           ),
+          const SizedBox(height: 8),
+          if (_isGeocodingAddress)
+            Row(
+              children: [
+                SizedBox(
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 1.5,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Getting address...',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            )
+          else if (_selectedLocationAddress != null)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.place, size: 14, color: theme.colorScheme.secondary),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    _selectedLocationAddress!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.secondary,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.copy, size: 16),
+                  onPressed: () {
+                    Clipboard.setData(
+                      ClipboardData(text: _selectedLocationAddress!),
+                    );
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Address copied to clipboard'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  padding: EdgeInsets.zero,
+                  tooltip: 'Copy address',
+                ),
+              ],
+            )
+          else
+            Row(
+              children: [
+                Icon(
+                  Icons.place_outlined,
+                  size: 14,
+                  color: Colors.grey.shade600,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'Tap to get address',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: Colors.grey.shade600,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.refresh, size: 16),
+                  onPressed: _updateLocationAddress,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  padding: EdgeInsets.zero,
+                  tooltip: 'Refresh address',
+                ),
+              ],
+            ),
           if (widget.showCoverageCircle) ...[
             const SizedBox(height: 8),
             Row(
@@ -611,6 +740,13 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
   }
 
   void _showLocationPicker() {
+    final latController = TextEditingController(
+      text: _selectedLatitude.toStringAsFixed(6),
+    );
+    final lngController = TextEditingController(
+      text: _selectedLongitude.toStringAsFixed(6),
+    );
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -619,7 +755,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
           mainAxisSize: MainAxisSize.min,
           children: [
             TextFormField(
-              initialValue: _selectedLatitude.toStringAsFixed(6),
+              controller: latController,
               decoration: const InputDecoration(
                 labelText: 'Latitude',
                 border: OutlineInputBorder(),
@@ -627,14 +763,10 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
-              onChanged: (value) {
-                final lat = double.tryParse(value);
-                if (lat != null) _selectedLatitude = lat;
-              },
             ),
             const SizedBox(height: 16),
             TextFormField(
-              initialValue: _selectedLongitude.toStringAsFixed(6),
+              controller: lngController,
               decoration: const InputDecoration(
                 labelText: 'Longitude',
                 border: OutlineInputBorder(),
@@ -642,10 +774,6 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
-              onChanged: (value) {
-                final lng = double.tryParse(value);
-                if (lng != null) _selectedLongitude = lng;
-              },
             ),
           ],
         ),
@@ -656,7 +784,21 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
           ),
           TextButton(
             onPressed: () {
-              setState(() {});
+              final lat = double.tryParse(latController.text);
+              final lng = double.tryParse(lngController.text);
+
+              if (lat != null && lng != null) {
+                setState(() {
+                  _selectedLatitude = lat;
+                  _selectedLongitude = lng;
+                  _selectedLocationAddress = null;
+                });
+                _updateLocationAddress();
+                _mapController.move(
+                  LatLng(lat, lng),
+                  _mapController.camera.zoom,
+                );
+              }
               Navigator.pop(context);
             },
             child: const Text('Update'),

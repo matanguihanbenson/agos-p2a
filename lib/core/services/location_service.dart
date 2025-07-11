@@ -27,7 +27,7 @@ class LocationService {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         throw Exception(
-          'Location services are disabled. Please enable location services.',
+          'Location services are disabled. Please enable location services in your device settings.',
         );
       }
 
@@ -36,13 +36,15 @@ class LocationService {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          throw Exception('Location permissions are denied');
+          throw Exception(
+            'Location permissions are denied. Please grant location access in app settings.',
+          );
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
         throw Exception(
-          'Location permissions are permanently denied, we cannot request permissions.',
+          'Location permissions are permanently denied. Please enable location access in app settings.',
         );
       }
 

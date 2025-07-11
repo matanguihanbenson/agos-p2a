@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../../../core/services/location_service.dart';
+import '../../../../core/services/geocoding_service.dart';
 import 'map_location_picker.dart';
 
 class CreateScheduleScreen extends StatefulWidget {
@@ -28,6 +29,10 @@ class _CreateScheduleScreenState extends State<CreateScheduleScreen> {
 
   bool _isLoading = false;
   bool _isGettingLocation = false;
+  String? _operationAreaAddress;
+  String? _dockingPointAddress;
+  bool _isGeocodingOperationArea = false;
+  bool _isGeocodingDockingPoint = false;
 
   // Mock available bots - replace with actual data
   final List<String> _availableBots = [
@@ -42,6 +47,11 @@ class _CreateScheduleScreenState extends State<CreateScheduleScreen> {
   void initState() {
     super.initState();
     _initializeDefaultTimes();
+    // Load initial addresses
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateOperationAreaAddress();
+      _updateDockingPointAddress();
+    });
   }
 
   void _initializeDefaultTimes() {
@@ -311,7 +321,11 @@ class _CreateScheduleScreenState extends State<CreateScheduleScreen> {
                 ),
                 onChanged: (value) {
                   final lat = double.tryParse(value);
-                  if (lat != null) _latitude = lat;
+                  if (lat != null) {
+                    _latitude = lat;
+                    _operationAreaAddress = null;
+                    _updateOperationAreaAddress();
+                  }
                 },
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -345,7 +359,11 @@ class _CreateScheduleScreenState extends State<CreateScheduleScreen> {
                 ),
                 onChanged: (value) {
                   final lng = double.tryParse(value);
-                  if (lng != null) _longitude = lng;
+                  if (lng != null) {
+                    _longitude = lng;
+                    _operationAreaAddress = null;
+                    _updateOperationAreaAddress();
+                  }
                 },
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -360,6 +378,13 @@ class _CreateScheduleScreenState extends State<CreateScheduleScreen> {
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 12),
+        _buildAddressDisplay(
+          _operationAreaAddress,
+          _isGeocodingOperationArea,
+          _updateOperationAreaAddress,
+          theme,
         ),
         const SizedBox(height: 16),
         TextFormField(
@@ -449,7 +474,11 @@ class _CreateScheduleScreenState extends State<CreateScheduleScreen> {
                 ),
                 onChanged: (value) {
                   final lat = double.tryParse(value);
-                  if (lat != null) _dockingLatitude = lat;
+                  if (lat != null) {
+                    _dockingLatitude = lat;
+                    _dockingPointAddress = null;
+                    _updateDockingPointAddress();
+                  }
                 },
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -483,7 +512,11 @@ class _CreateScheduleScreenState extends State<CreateScheduleScreen> {
                 ),
                 onChanged: (value) {
                   final lng = double.tryParse(value);
-                  if (lng != null) _dockingLongitude = lng;
+                  if (lng != null) {
+                    _dockingLongitude = lng;
+                    _dockingPointAddress = null;
+                    _updateDockingPointAddress();
+                  }
                 },
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -498,6 +531,13 @@ class _CreateScheduleScreenState extends State<CreateScheduleScreen> {
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 12),
+        _buildAddressDisplay(
+          _dockingPointAddress,
+          _isGeocodingDockingPoint,
+          _updateDockingPointAddress,
+          theme,
         ),
         const SizedBox(height: 16),
         SizedBox(
@@ -551,6 +591,89 @@ class _CreateScheduleScreenState extends State<CreateScheduleScreen> {
           maxLength: 500,
         ),
       ],
+    );
+  }
+
+  Widget _buildAddressDisplay(
+    String? address,
+    bool isLoading,
+    VoidCallback onRefresh,
+    ThemeData theme,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          if (isLoading)
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: theme.colorScheme.primary,
+              ),
+            )
+          else
+            Icon(
+              address != null ? Icons.place : Icons.place_outlined,
+              size: 16,
+              color: address != null
+                  ? theme.colorScheme.primary
+                  : Colors.grey.shade600,
+            ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              isLoading
+                  ? 'Loading address...'
+                  : address ?? 'Address not available',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: isLoading
+                    ? theme.colorScheme.primary
+                    : address != null
+                    ? theme.colorScheme.onSurfaceVariant
+                    : Colors.grey.shade600,
+                fontStyle: address == null && !isLoading
+                    ? FontStyle.italic
+                    : null,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (!isLoading) ...[
+            const SizedBox(width: 8),
+            if (address != null)
+              IconButton(
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: address));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Address copied to clipboard'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.copy, size: 16),
+                tooltip: 'Copy address',
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                padding: EdgeInsets.zero,
+              ),
+            IconButton(
+              onPressed: onRefresh,
+              icon: const Icon(Icons.refresh, size: 16),
+              tooltip: 'Refresh address',
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              padding: EdgeInsets.zero,
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -651,6 +774,60 @@ class _CreateScheduleScreenState extends State<CreateScheduleScreen> {
     }
   }
 
+  Future<void> _updateOperationAreaAddress() async {
+    setState(() {
+      _isGeocodingOperationArea = true;
+    });
+
+    try {
+      final address = await GeocodingService.reverseGeocode(
+        _latitude,
+        _longitude,
+      );
+      if (mounted) {
+        setState(() {
+          _operationAreaAddress = address != null
+              ? GeocodingService.formatAddress(address)
+              : null;
+          _isGeocodingOperationArea = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isGeocodingOperationArea = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _updateDockingPointAddress() async {
+    setState(() {
+      _isGeocodingDockingPoint = true;
+    });
+
+    try {
+      final address = await GeocodingService.reverseGeocode(
+        _dockingLatitude,
+        _dockingLongitude,
+      );
+      if (mounted) {
+        setState(() {
+          _dockingPointAddress = address != null
+              ? GeocodingService.formatAddress(address)
+              : null;
+          _isGeocodingDockingPoint = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isGeocodingDockingPoint = false;
+        });
+      }
+    }
+  }
+
   Future<void> _selectOperationAreaOnMap() async {
     final radius = int.tryParse(_radiusController.text) ?? 100;
 
@@ -671,10 +848,16 @@ class _CreateScheduleScreenState extends State<CreateScheduleScreen> {
       setState(() {
         _latitude = result['latitude']!;
         _longitude = result['longitude']!;
+        _operationAreaAddress = result['address'];
         if (result['radius'] != null) {
           _radiusController.text = result['radius'].toString();
         }
       });
+
+      // Update address if not provided by map picker
+      if (_operationAreaAddress == null) {
+        _updateOperationAreaAddress();
+      }
     }
   }
 
@@ -696,7 +879,13 @@ class _CreateScheduleScreenState extends State<CreateScheduleScreen> {
       setState(() {
         _dockingLatitude = result['latitude']!;
         _dockingLongitude = result['longitude']!;
+        _dockingPointAddress = result['address'];
       });
+
+      // Update address if not provided by map picker
+      if (_dockingPointAddress == null) {
+        _updateDockingPointAddress();
+      }
     }
   }
 
@@ -716,7 +905,13 @@ class _CreateScheduleScreenState extends State<CreateScheduleScreen> {
           _longitude = position.longitude;
           _dockingLatitude = position.latitude;
           _dockingLongitude = position.longitude;
+          _operationAreaAddress = null;
+          _dockingPointAddress = null;
         });
+
+        // Update addresses for new locations
+        _updateOperationAreaAddress();
+        _updateDockingPointAddress();
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
