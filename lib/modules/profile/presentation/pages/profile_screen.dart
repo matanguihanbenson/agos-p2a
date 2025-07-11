@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/providers/profile_providers.dart'; // Provider
-import '../../domain/models/user_profile.dart'; // Model
-import '../widgets/profile_header.dart'; // Header Widget
-import '../widgets/profile_info_cards.dart'; // Info Cards
-import '../widgets/settings_section.dart'; // SettingsSection Widget
-import '../widgets/settings_item.dart'; // SettingsItem Model
-import '../widgets/profile_dialogs.dart'; // All Dialogs
+import '../../data/providers/profile_providers.dart';
+import '../../domain/models/user_profile.dart';
+import '../widgets/profile_header.dart';
+import '../widgets/profile_info_cards.dart';
+import '../widgets/settings_section.dart';
+import '../widgets/settings_item.dart';
+import '../widgets/profile_dialogs.dart';
+
+import '../widgets/impact/impact_header.dart';
+import '../widgets/impact/trash_collection_metrics.dart';
+import '../widgets/impact/water_quality.dart';
+import '../widgets/impact/operations_metrics.dart';
+import '../widgets/impact/trends_section.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -37,7 +43,6 @@ class ProfileScreen extends ConsumerWidget {
               const SizedBox(height: 16),
               Text('Unable to load profile'),
               const SizedBox(height: 16),
-              // Refresh button
               OutlinedButton(
                 onPressed: () => ref.refresh(userProfileProvider),
                 child: const Text('Retry'),
@@ -57,7 +62,7 @@ class _ProfileBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Profile'),
@@ -74,6 +79,7 @@ class _ProfileBody extends StatelessWidget {
             unselectedLabelColor: Colors.white70,
             tabs: [
               Tab(icon: Icon(Icons.person), text: 'Profile'),
+              Tab(icon: Icon(Icons.eco), text: 'Impact'),
               Tab(icon: Icon(Icons.settings), text: 'Settings'),
               Tab(icon: Icon(Icons.help), text: 'Support'),
             ],
@@ -82,6 +88,7 @@ class _ProfileBody extends StatelessWidget {
         body: TabBarView(
           children: [
             _ProfileTab(userProfile: userProfile),
+            _ImpactTab(),
             _SettingsTab(userProfile: userProfile),
             _SupportTab(),
           ],
@@ -105,29 +112,6 @@ class _ProfileTab extends StatelessWidget {
           ProfileHeader(userProfile: userProfile),
           const SizedBox(height: 24),
 
-          // Quick Actions
-          Row(
-            children: [
-              Expanded(
-                child: _QuickActionCard(
-                  icon: Icons.edit,
-                  label: 'Edit Profile',
-                  onTap: () => ProfileDialogs.showEditProfileDialog(
-                    context,
-                    userProfile,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _QuickActionCard(
-                  icon: Icons.lock,
-                  label: 'Password',
-                  onTap: () => ProfileDialogs.showChangePasswordDialog(context),
-                ),
-              ),
-            ],
-          ),
           const SizedBox(height: 24),
 
           ProfileInfoCards(userProfile: userProfile),
@@ -151,14 +135,23 @@ class _SettingsTab extends StatelessWidget {
       child: Column(
         children: [
           SettingsSection(
-            title: 'Account Settings',
+            title: 'Preferences',
             items: [
               SettingsItem(
-                title: 'Edit Profile',
-                subtitle: 'Update your personal information',
-                icon: Icons.person_outline,
-                onTap: () =>
-                    ProfileDialogs.showEditProfileDialog(context, userProfile),
+                title: 'Notifications',
+                subtitle: 'Manage your notification preferences',
+                icon: Icons.notifications_outlined,
+                onTap: () {
+                  // TODO: Add notification settings
+                },
+              ),
+              SettingsItem(
+                title: 'Privacy',
+                subtitle: 'Control your privacy settings',
+                icon: Icons.privacy_tip_outlined,
+                onTap: () {
+                  // TODO: Add privacy settings
+                },
               ),
               SettingsItem(
                 title: 'Change Password',
@@ -180,28 +173,6 @@ class _SettingsTab extends StatelessWidget {
                 onTap: () => ProfileDialogs.exportData(context),
               ),
             ],
-          ),
-          const SizedBox(height: 24),
-
-          SettingsSection(
-            title: 'Account Actions',
-            items: [
-              SettingsItem(
-                title: 'Delete Account',
-                subtitle: 'Permanently delete your account',
-                icon: Icons.delete_forever,
-                onTap: () => ProfileDialogs.showDeleteAccountDialog(context),
-                isDestructive: true,
-              ),
-              SettingsItem(
-                title: 'Sign Out',
-                subtitle: 'Sign out of your account',
-                icon: Icons.logout,
-                onTap: () => ProfileDialogs.showSignOutDialog(context),
-                isDestructive: true,
-              ),
-            ],
-            titleColor: theme.colorScheme.error,
           ),
           const SizedBox(height: 32),
         ],
@@ -240,6 +211,31 @@ class _SupportTab extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+}
+
+class _ImpactTab extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ImpactHeader(),
+          const SizedBox(height: 24),
+          TrashCollectionMetrics(),
+          const SizedBox(height: 24),
+
+          WaterQualityMetrics(),
+          const SizedBox(height: 24),
+          OperationsMetrics(),
+          const SizedBox(height: 24),
+          TrendsSection(),
           const SizedBox(height: 32),
         ],
       ),

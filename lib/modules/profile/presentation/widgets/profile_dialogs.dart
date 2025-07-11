@@ -45,40 +45,6 @@ class ProfileDialogs {
     );
   }
 
-  static void showDeleteAccountDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Account'),
-        content: const Text(
-          'Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently removed.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              // TODO: Add your actual account deletion logic here!
-              // For example:
-              // await FirebaseAuth.instance.currentUser?.delete();
-              // Navigator.of(context).pushReplacementNamed('/login');
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Account deletion not yet implemented.'),
-                ),
-              );
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-  }
-
   static void exportData(BuildContext context) {
     showDialog(
       context: context,
