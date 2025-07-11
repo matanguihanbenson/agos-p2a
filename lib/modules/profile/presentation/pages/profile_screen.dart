@@ -56,109 +56,229 @@ class _ProfileBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            onPressed: () =>
-                ProfileDialogs.showEditProfileDialog(context, userProfile),
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Profile'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: () =>
+                  ProfileDialogs.showEditProfileDialog(context, userProfile),
+            ),
+          ],
+          bottom: TabBar(
+            indicatorColor: Colors.white,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white70,
+            tabs: [
+              Tab(icon: Icon(Icons.person), text: 'Profile'),
+              Tab(icon: Icon(Icons.settings), text: 'Settings'),
+              Tab(icon: Icon(Icons.help), text: 'Support'),
+            ],
           ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        ),
+        body: TabBarView(
           children: [
-            ProfileHeader(userProfile: userProfile),
-            const SizedBox(height: 24),
-            SettingsSection(
-              title: 'Account Settings',
-              items: [
-                SettingsItem(
-                  title: 'Edit Profile',
-                  subtitle: 'Update your personal information',
-                  icon: Icons.person_outline,
+            _ProfileTab(userProfile: userProfile),
+            _SettingsTab(userProfile: userProfile),
+            _SupportTab(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileTab extends StatelessWidget {
+  final UserProfile userProfile;
+  const _ProfileTab({required this.userProfile});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ProfileHeader(userProfile: userProfile),
+          const SizedBox(height: 24),
+
+          // Quick Actions
+          Row(
+            children: [
+              Expanded(
+                child: _QuickActionCard(
+                  icon: Icons.edit,
+                  label: 'Edit Profile',
                   onTap: () => ProfileDialogs.showEditProfileDialog(
                     context,
                     userProfile,
                   ),
                 ),
-                SettingsItem(
-                  title: 'Change Password',
-                  subtitle: 'Update your account password',
-                  icon: Icons.lock_outline,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _QuickActionCard(
+                  icon: Icons.lock,
+                  label: 'Password',
                   onTap: () => ProfileDialogs.showChangePasswordDialog(context),
                 ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Profile Information',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurface,
               ),
-            ),
-            const SizedBox(height: 12),
-            ProfileInfoCards(userProfile: userProfile),
-            const SizedBox(height: 24),
-            SettingsSection(
-              title: 'Help & Support',
-              items: [
-                SettingsItem(
-                  title: 'Help Center',
-                  subtitle: 'Get help and find answers',
-                  icon: Icons.help_outline,
-                  onTap: () => ProfileDialogs.showHelpCenter(context),
-                ),
-                SettingsItem(
-                  title: 'Contact Support',
-                  subtitle: 'Reach out to our support team',
-                  icon: Icons.support_agent,
-                  onTap: () => ProfileDialogs.contactSupport(context),
-                ),
-                SettingsItem(
-                  title: 'Report a Bug',
-                  subtitle: 'Help us improve the app',
-                  icon: Icons.bug_report,
-                  onTap: () => ProfileDialogs.reportBug(context),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            SettingsSection(
-              title: 'Account Actions',
-              items: [
-                SettingsItem(
-                  title: 'Export Data',
-                  subtitle: 'Download your account data',
-                  icon: Icons.download,
-                  onTap: () => ProfileDialogs.exportData(context),
-                ),
-                SettingsItem(
-                  title: 'Delete Account',
-                  subtitle: 'Permanently delete your account',
-                  icon: Icons.delete_forever,
-                  onTap: () => ProfileDialogs.showDeleteAccountDialog(context),
-                  isDestructive: true,
-                ),
-                SettingsItem(
-                  title: 'Sign Out',
-                  subtitle: 'Sign out of your account',
-                  icon: Icons.logout,
-                  onTap: () => ProfileDialogs.showSignOutDialog(context),
-                  isDestructive: true,
-                ),
-              ],
-              titleColor: theme.colorScheme.error,
-            ),
-            const SizedBox(height: 32),
-          ],
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          ProfileInfoCards(userProfile: userProfile),
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+}
+
+class _SettingsTab extends StatelessWidget {
+  final UserProfile userProfile;
+  const _SettingsTab({required this.userProfile});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          SettingsSection(
+            title: 'Account Settings',
+            items: [
+              SettingsItem(
+                title: 'Edit Profile',
+                subtitle: 'Update your personal information',
+                icon: Icons.person_outline,
+                onTap: () =>
+                    ProfileDialogs.showEditProfileDialog(context, userProfile),
+              ),
+              SettingsItem(
+                title: 'Change Password',
+                subtitle: 'Update your account password',
+                icon: Icons.lock_outline,
+                onTap: () => ProfileDialogs.showChangePasswordDialog(context),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          SettingsSection(
+            title: 'Data & Privacy',
+            items: [
+              SettingsItem(
+                title: 'Export Data',
+                subtitle: 'Download your account data',
+                icon: Icons.download,
+                onTap: () => ProfileDialogs.exportData(context),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          SettingsSection(
+            title: 'Account Actions',
+            items: [
+              SettingsItem(
+                title: 'Delete Account',
+                subtitle: 'Permanently delete your account',
+                icon: Icons.delete_forever,
+                onTap: () => ProfileDialogs.showDeleteAccountDialog(context),
+                isDestructive: true,
+              ),
+              SettingsItem(
+                title: 'Sign Out',
+                subtitle: 'Sign out of your account',
+                icon: Icons.logout,
+                onTap: () => ProfileDialogs.showSignOutDialog(context),
+                isDestructive: true,
+              ),
+            ],
+            titleColor: theme.colorScheme.error,
+          ),
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+}
+
+class _SupportTab extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          SettingsSection(
+            title: 'Help & Support',
+            items: [
+              SettingsItem(
+                title: 'Help Center',
+                subtitle: 'Get help and find answers',
+                icon: Icons.help_outline,
+                onTap: () => ProfileDialogs.showHelpCenter(context),
+              ),
+              SettingsItem(
+                title: 'Contact Support',
+                subtitle: 'Reach out to our support team',
+                icon: Icons.support_agent,
+                onTap: () => ProfileDialogs.contactSupport(context),
+              ),
+              SettingsItem(
+                title: 'Report a Bug',
+                subtitle: 'Help us improve the app',
+                icon: Icons.bug_report,
+                onTap: () => ProfileDialogs.reportBug(context),
+              ),
+            ],
+          ),
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickActionCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _QuickActionCard({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Icon(icon, size: 32, color: theme.colorScheme.primary),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                style: theme.textTheme.labelMedium,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ),
     );
