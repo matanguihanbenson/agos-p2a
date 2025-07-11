@@ -92,7 +92,7 @@ class _WeatherCardWidgetState extends State<WeatherCardWidget> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    DateFormat.Hm().format(_currentTime),
+                    DateFormat('h:mm a').format(_currentTime),
                     style: theme.textTheme.bodyLarge?.copyWith(
                       color: Colors.white,
                       fontSize: 16,
