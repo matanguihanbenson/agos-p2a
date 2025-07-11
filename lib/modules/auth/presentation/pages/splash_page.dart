@@ -56,22 +56,25 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
   }
 
   Future<void> _startLoading() async {
+    // Start animations immediately
     _fadeController.forward();
-    await Future.delayed(const Duration(milliseconds: 300));
     _progressController.forward();
 
-    await Future.delayed(const Duration(milliseconds: 2500));
+    // Wait for animation to complete
+    await _progressController.forward();
 
-    // Small delay after loading completes for smooth transition
-    await Future.delayed(const Duration(milliseconds: 500));
+    // Brief pause to show completion
+    await Future.delayed(const Duration(milliseconds: 200));
 
     if (!mounted) return;
 
     final isLoggedIn = FirebaseAuth.instance.currentUser != null;
 
-    Navigator.of(
-      context,
-    ).pushReplacementNamed(isLoggedIn ? AppRoutes.home : AppRoutes.login);
+    // Use pushNamedAndRemoveUntil for better memory management
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      isLoggedIn ? AppRoutes.home : AppRoutes.login,
+      (route) => false,
+    );
   }
 
   @override

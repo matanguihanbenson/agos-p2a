@@ -23,10 +23,20 @@ final userFirstNameProvider = FutureProvider<String>((ref) async {
     final doc = await FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
-        .get();
+        .get(const GetOptions(source: Source.cache)); // Try cache first
 
     if (doc.exists && doc.data() != null) {
       return doc.data()!['firstname'] ?? 'Guest';
+    }
+
+    // Fallback to server if cache miss
+    final serverDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    if (serverDoc.exists && serverDoc.data() != null) {
+      return serverDoc.data()!['firstname'] ?? 'Guest';
     }
     return 'Guest';
   } catch (e) {
@@ -150,14 +160,14 @@ class HomePage extends ConsumerWidget {
                                           color: theme.colorScheme.onBackground,
                                         ),
                                   ),
-                                  loading: () => Text(
-                                    'Loading...',
-                                    style: theme.textTheme.displayMedium
-                                        ?.copyWith(
-                                          fontSize: 28,
-                                          fontWeight: FontWeight.w800,
-                                          color: theme.colorScheme.onBackground,
-                                        ),
+                                  loading: () => Container(
+                                    height: 36,
+                                    width: 120,
+                                    decoration: BoxDecoration(
+                                      color: theme.colorScheme.onBackground
+                                          .withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
                                   ),
                                   error: (_, __) => Text(
                                     'Guest',
@@ -304,9 +314,32 @@ class HomePage extends ConsumerWidget {
                   ),
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => Scaffold(
+                backgroundColor: theme.colorScheme.surface,
+                appBar: AppBar(
+                  automaticallyImplyLeading: false,
+                  elevation: 0,
+                  backgroundColor: theme.colorScheme.background,
+                  title: Text(
+                    'Dashboard',
+                    style: theme.textTheme.displayMedium?.copyWith(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                body: const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 16),
+                      Text('Loading dashboard...'),
+                    ],
+                  ),
+                ),
+              ),
               error: (error, stack) {
-                // Fallback for errors (optional: display message)
                 return const Center(child: Text('Error loading dashboard.'));
               },
             ),

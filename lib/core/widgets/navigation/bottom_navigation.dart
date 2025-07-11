@@ -9,7 +9,7 @@ import 'package:agos/modules/map/presentation/pages/map_screen.dart';
 import 'package:agos/modules/bot/presentation/pages/bot_screen.dart';
 import 'package:agos/modules/users/presentation/pages/users_screen.dart';
 import 'package:agos/modules/schedule/presentation/pages/schedule_screen.dart';
-import 'package:agos/modules/impact/presentation/pages/impact_screen.dart';
+import 'package:agos/modules/profile/presentation/pages/profile_screen.dart';
 
 import '../../providers/nav_provider.dart';
 import '../../providers/user_providers.dart';
@@ -36,14 +36,14 @@ class BottomNavigation extends ConsumerWidget {
                 BotScreen(role: role),
                 const HomePage(),
                 const UsersScreen(),
-                const ImpactScreen(),
+                const ProfileScreen(),
               ]
             : [
                 const MapScreen(),
                 BotScreen(role: role),
                 const HomePage(),
                 const ScheduleScreen(),
-                const ImpactScreen(),
+                const ProfileScreen(),
               ];
 
         final adjustedIndex = currentIndex >= screens.length ? 0 : currentIndex;
@@ -63,8 +63,8 @@ class BottomNavigation extends ConsumerWidget {
             label: role == 'admin' ? 'Users' : 'Schedule',
           ),
           const BottomNavigationBarItem(
-            icon: Icon(Icons.public),
-            label: 'Impact',
+            icon: Icon(Icons.person),
+            label: 'Profile',
           ),
         ];
 
