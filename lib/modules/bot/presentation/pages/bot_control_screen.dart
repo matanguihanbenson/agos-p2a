@@ -26,9 +26,9 @@ class _BotControlScreenState extends State<BotControlScreen>
   bool _isLoading = false;
   String? _lastCommand;
   DateTime? _lastCommandTime;
-  bool _isConnected = false;
-  bool _isBluetoothConnected = false;
-  bool _isManualMode = false; // Default to automatic mode
+  bool _isConnected = false; // Database/Internet connection
+  bool _isBluetoothConnected = false; // Bluetooth connection (independent)
+  bool _isManualMode = false;
 
   // Joystick state
   Offset _joystickPosition = Offset.zero;
@@ -112,9 +112,10 @@ class _BotControlScreenState extends State<BotControlScreen>
     String command, {
     Map<String, dynamic>? params,
   }) async {
-    if (!_isConnected || !_isBluetoothConnected) {
+    // Check if Bluetooth is connected (primary requirement)
+    if (!_isBluetoothConnected) {
       _showSnackBar(
-        'Bot is not connected. Cannot send commands.',
+        'Bluetooth not connected. Cannot send commands.',
         isError: true,
       );
       return;
@@ -132,29 +133,54 @@ class _BotControlScreenState extends State<BotControlScreen>
     });
 
     try {
-      final commandData = {
-        'command': command,
-        'timestamp': ServerValue.timestamp,
-        'sent_by': FirebaseAuth.instance.currentUser?.uid,
-        'params': params ?? {},
-        'mode': 'manual',
-      };
+      // Send command via Bluetooth (simulate for now)
+      await _sendBluetoothCommand(command, params);
 
-      await _database
-          .child('bots')
-          .child(widget.botDoc.id)
-          .child('commands')
-          .push()
-          .set(commandData);
+      // Try to log to database if connected, but don't fail if offline
+      if (_isConnected) {
+        try {
+          final commandData = {
+            'command': command,
+            'timestamp': ServerValue.timestamp,
+            'sent_by': FirebaseAuth.instance.currentUser?.uid,
+            'params': params ?? {},
+            'mode': 'manual',
+            'sent_via': 'bluetooth',
+          };
 
-      _showSnackBar('Command sent: ${command.toUpperCase()}');
+          await _database
+              .child('bots')
+              .child(widget.botDoc.id)
+              .child('commands')
+              .push()
+              .set(commandData);
+        } catch (e) {
+          // Database logging failed, but Bluetooth command was sent
+          print('Failed to log command to database: $e');
+        }
+      }
+
+      _showSnackBar('Command sent via Bluetooth: ${command.toUpperCase()}');
     } catch (e) {
-      _showSnackBar('Failed to send command: $e', isError: true);
+      _showSnackBar('Failed to send Bluetooth command: $e', isError: true);
     } finally {
       setState(() {
         _isLoading = false;
       });
     }
+  }
+
+  // Simulate Bluetooth command sending
+  Future<void> _sendBluetoothCommand(
+    String command,
+    Map<String, dynamic>? params,
+  ) async {
+    // Simulate Bluetooth transmission delay
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    // Here you would integrate with actual Bluetooth API
+    // For now, we'll just simulate success
+    print('Bluetooth Command Sent: $command with params: $params');
   }
 
   void _handleJoystickMove(Offset position) {
@@ -203,15 +229,28 @@ class _BotControlScreenState extends State<BotControlScreen>
   }
 
   void _toggleMode() {
+    // Mode can be toggled if Bluetooth is connected, regardless of database status
+    if (!_isBluetoothConnected) {
+      _showSnackBar(
+        'Connect via Bluetooth first to change modes.',
+        isError: true,
+      );
+      return;
+    }
+
     setState(() {
       _isManualMode = !_isManualMode;
     });
 
-    // Send mode change command
-    _sendModeCommand(_isManualMode ? 'manual' : 'automatic');
+    // Try to send mode change to database if connected
+    if (_isConnected) {
+      _sendModeCommand(_isManualMode ? 'manual' : 'automatic');
+    }
 
     _showSnackBar(
-      _isManualMode ? 'Switched to Manual Mode' : 'Switched to Automatic Mode',
+      _isManualMode
+          ? 'Switched to Manual Mode (Bluetooth)'
+          : 'Switched to Automatic Mode (Bluetooth)',
     );
   }
 
@@ -368,48 +407,101 @@ class _BotControlScreenState extends State<BotControlScreen>
           ),
         ],
       ),
-      child: Row(
+      child: Column(
         children: [
-          // Connection Status
-          Container(
-            width: 10,
-            height: 10,
-            decoration: BoxDecoration(
-              color: (_isConnected && _isBluetoothConnected)
-                  ? const Color(0xFF10B981)
-                  : const Color(0xFFEF4444),
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 12),
-
-          // Status Text
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  (_isConnected && _isBluetoothConnected)
-                      ? 'Connected'
-                      : 'Disconnected',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: (_isConnected && _isBluetoothConnected)
-                        ? const Color(0xFF047857)
-                        : const Color(0xFFDC2626),
-                  ),
+          // Database Connection Status
+          Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: _isConnected
+                      ? const Color(0xFF10B981)
+                      : const Color(0xFFEF4444),
+                  shape: BoxShape.circle,
                 ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Database: ${_isConnected ? 'Online' : 'Offline'}',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: _isConnected
+                      ? const Color(0xFF047857)
+                      : const Color(0xFFDC2626),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Bluetooth Connection Status
+          Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: _isBluetoothConnected
+                      ? const Color(0xFF3B82F6)
+                      : const Color(0xFFEF4444),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Bluetooth: ${_isBluetoothConnected ? 'Connected' : 'Disconnected'}',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: _isBluetoothConnected
+                      ? const Color(0xFF1D4ED8)
+                      : const Color(0xFFDC2626),
+                ),
+              ),
+              const Spacer(),
+              if (_isBluetoothConnected) ...[
                 Text(
                   'Power: ${active ? 'ON' : 'OFF'} • Battery: $battery',
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: 11,
                     color: Color(0xFF64748B),
                   ),
                 ),
               ],
-            ),
+            ],
           ),
+
+          // Connection Priority Info
+          if (!_isBluetoothConnected) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF3C7),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: const Color(0xFFD97706)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline, color: Color(0xFFD97706), size: 14),
+                  SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Bluetooth required for control (works offline)',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Color(0xFF92400E),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -454,7 +546,7 @@ class _BotControlScreenState extends State<BotControlScreen>
                     ),
                     Text(
                       _isManualMode
-                          ? 'You have full control of the bot'
+                          ? 'Direct Bluetooth control active'
                           : 'Bot operates automatically',
                       style: const TextStyle(
                         fontSize: 12,
@@ -466,16 +558,14 @@ class _BotControlScreenState extends State<BotControlScreen>
               ),
               Switch(
                 value: _isManualMode,
-                onChanged: (_isConnected && _isBluetoothConnected)
-                    ? (_) => _toggleMode()
-                    : null,
+                onChanged: _isBluetoothConnected ? (_) => _toggleMode() : null,
                 activeColor: const Color(0xFF3B82F6),
                 inactiveThumbColor: const Color(0xFF94A3B8),
                 inactiveTrackColor: const Color(0xFFE2E8F0),
               ),
             ],
           ),
-          if (!_isManualMode) ...[
+          if (!_isManualMode && _isBluetoothConnected) ...[
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
@@ -489,7 +579,7 @@ class _BotControlScreenState extends State<BotControlScreen>
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Bot is running automatically. Switch to manual mode to take control.',
+                      'Bot is running automatically. Switch to manual for direct control.',
                       style: TextStyle(fontSize: 12, color: Color(0xFF475569)),
                     ),
                   ),
@@ -554,11 +644,7 @@ class _BotControlScreenState extends State<BotControlScreen>
             child: _JoystickWidget(
               onChanged: _handleJoystickMove,
               onEnded: _handleJoystickEnd,
-              enabled:
-                  _isConnected &&
-                  _isBluetoothConnected &&
-                  _isManualMode &&
-                  !_isLoading,
+              enabled: _isBluetoothConnected && _isManualMode && !_isLoading,
             ),
           ),
 
@@ -578,17 +664,17 @@ class _BotControlScreenState extends State<BotControlScreen>
   }
 
   String _getControlHint() {
-    if (!_isConnected || !_isBluetoothConnected) {
-      return 'Connect to bot to enable navigation';
+    if (!_isBluetoothConnected) {
+      return 'Connect via Bluetooth to enable navigation (works offline)';
     } else if (!_isManualMode) {
       return 'Switch to manual mode to control the bot';
     } else {
-      return 'Drag to navigate the bot in any direction';
+      return 'Drag to navigate the bot in any direction via Bluetooth';
     }
   }
 
   Color _getControlHintColor() {
-    if (!_isConnected || !_isBluetoothConnected || !_isManualMode) {
+    if (!_isBluetoothConnected || !_isManualMode) {
       return const Color(0xFF94A3B8);
     } else {
       return const Color(0xFF3B82F6);
@@ -614,13 +700,38 @@ class _BotControlScreenState extends State<BotControlScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Operations',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1E293B),
-            ),
+          Row(
+            children: [
+              const Text(
+                'Operations',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+              const Spacer(),
+              if (!_isConnected && _isBluetoothConnected) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF3B82F6).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    'BLUETOOTH ONLY',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1D4ED8),
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
           const SizedBox(height: 16),
           Row(
@@ -677,7 +788,8 @@ class _BotControlScreenState extends State<BotControlScreen>
     required VoidCallback onPressed,
     required Color color,
   }) {
-    final isEnabled = _isConnected && _isBluetoothConnected && !_isLoading;
+    final isEnabled =
+        _isBluetoothConnected && !_isLoading; // Only require Bluetooth
 
     return Material(
       color: Colors.transparent,
@@ -751,7 +863,9 @@ class _BotControlScreenState extends State<BotControlScreen>
             width: double.infinity,
             height: 48,
             child: ElevatedButton.icon(
-              onPressed: (_isConnected && _isBluetoothConnected && !_isLoading)
+              onPressed:
+                  (_isBluetoothConnected &&
+                      !_isLoading) // Only require Bluetooth
                   ? () => _showEmergencyDialog()
                   : null,
               icon: const Icon(Icons.emergency, size: 18),

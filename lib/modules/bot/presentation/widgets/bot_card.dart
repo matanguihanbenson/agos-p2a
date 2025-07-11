@@ -472,15 +472,13 @@ class _BotCardState extends State<BotCard> {
         _buildActionButton(
           icon: Icons.settings_remote_rounded,
           label: compact ? '' : 'Control',
-          onPressed:
-              widget.onControl ??
-              () {
-                Navigator.pushNamed(
-                  context,
-                  AppRoutes.botControl,
-                  arguments: widget.doc,
-                );
-              },
+          onPressed: () {
+            Navigator.pushNamed(
+              context,
+              AppRoutes.botControl,
+              arguments: widget.doc,
+            );
+          },
           isPrimary: true,
           colorScheme: colorScheme,
           compact: compact,
