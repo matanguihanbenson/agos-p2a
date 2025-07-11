@@ -36,10 +36,7 @@ class _NotificationScreenState extends State<NotificationScreen>
     return Scaffold(
       backgroundColor: Colors.grey[50],
       body: CustomScrollView(
-        slivers: [
-          _buildSliverAppBar(),
-          _buildNotificationsList(),
-        ],
+        slivers: [_buildSliverAppBar(), _buildNotificationsList()],
       ),
     );
   }
@@ -55,10 +52,7 @@ class _NotificationScreenState extends State<NotificationScreen>
       flexibleSpace: FlexibleSpaceBar(
         title: const Text(
           'Notifications',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
         ),
         centerTitle: false,
         titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
@@ -69,7 +63,7 @@ class _NotificationScreenState extends State<NotificationScreen>
           builder: (context, snapshot) {
             final unreadCount = snapshot.data ?? 0;
             if (unreadCount == 0) return const SizedBox.shrink();
-            
+
             return TextButton.icon(
               onPressed: _markAllAsRead,
               icon: const Icon(Icons.done_all_rounded, size: 18),
@@ -105,55 +99,51 @@ class _NotificationScreenState extends State<NotificationScreen>
         final notifications = snapshot.data ?? [];
 
         if (notifications.isEmpty) {
-          return SliverFillRemaining(
-            child: _buildEmptyState(),
-          );
+          return SliverFillRemaining(child: _buildEmptyState());
         }
 
         return SliverPadding(
           padding: const EdgeInsets.all(16),
           sliver: SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final notification = notifications[index];
-                return FadeTransition(
-                  opacity: Tween<double>(begin: 0, end: 1).animate(
-                    CurvedAnimation(
-                      parent: _animationController,
-                      curve: Interval(
-                        (index * 0.1).clamp(0.0, 1.0),
-                        ((index * 0.1) + 0.2).clamp(0.0, 1.0),
-                        curve: Curves.easeOut,
-                      ),
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final notification = notifications[index];
+              return FadeTransition(
+                opacity: Tween<double>(begin: 0, end: 1).animate(
+                  CurvedAnimation(
+                    parent: _animationController,
+                    curve: Interval(
+                      (index * 0.1).clamp(0.0, 1.0),
+                      ((index * 0.1) + 0.2).clamp(0.0, 1.0),
+                      curve: Curves.easeOut,
                     ),
                   ),
-                  child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0, 0.3),
-                      end: Offset.zero,
-                    ).animate(
-                      CurvedAnimation(
-                        parent: _animationController,
-                        curve: Interval(
-                          (index * 0.1).clamp(0.0, 1.0),
-                          ((index * 0.1) + 0.2).clamp(0.0, 1.0),
-                          curve: Curves.easeOut,
+                ),
+                child: SlideTransition(
+                  position:
+                      Tween<Offset>(
+                        begin: const Offset(0, 0.3),
+                        end: Offset.zero,
+                      ).animate(
+                        CurvedAnimation(
+                          parent: _animationController,
+                          curve: Interval(
+                            (index * 0.1).clamp(0.0, 1.0),
+                            ((index * 0.1) + 0.2).clamp(0.0, 1.0),
+                            curve: Curves.easeOut,
+                          ),
                         ),
                       ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: NotificationTile(
-                        notification: notification,
-                        onTap: () => _handleNotificationTap(notification),
-                        onDismiss: () => _deleteNotification(notification.id),
-                      ),
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: NotificationTile(
+                      notification: notification,
+                      onTap: () => _handleNotificationTap(notification),
+                      onDismiss: () => _deleteNotification(notification.id),
                     ),
                   ),
-                );
-              },
-              childCount: notifications.length,
-            ),
+                ),
+              );
+            }, childCount: notifications.length),
           ),
         );
       },
@@ -189,10 +179,7 @@ class _NotificationScreenState extends State<NotificationScreen>
           const SizedBox(height: 8),
           Text(
             'When you receive notifications, they\'ll appear here',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[500],
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
             textAlign: TextAlign.center,
           ),
         ],
@@ -205,11 +192,7 @@ class _NotificationScreenState extends State<NotificationScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.error_outline_rounded,
-            size: 48,
-            color: Colors.red[300],
-          ),
+          Icon(Icons.error_outline_rounded, size: 48, color: Colors.red[300]),
           const SizedBox(height: 16),
           Text(
             'Something went wrong',
@@ -222,10 +205,7 @@ class _NotificationScreenState extends State<NotificationScreen>
           const SizedBox(height: 8),
           Text(
             error,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[500],
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
             textAlign: TextAlign.center,
           ),
         ],
@@ -241,9 +221,8 @@ class _NotificationScreenState extends State<NotificationScreen>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => NotificationDetailScreen(
-          notification: notification,
-        ),
+        builder: (context) =>
+            NotificationDetailScreen(notification: notification),
       ),
     );
   }
@@ -288,11 +267,7 @@ class NotificationTile extends StatelessWidget {
           color: Colors.red,
           borderRadius: BorderRadius.circular(16),
         ),
-        child: const Icon(
-          Icons.delete_rounded,
-          color: Colors.white,
-          size: 24,
-        ),
+        child: const Icon(Icons.delete_rounded, color: Colors.white, size: 24),
       ),
       child: Container(
         decoration: BoxDecoration(

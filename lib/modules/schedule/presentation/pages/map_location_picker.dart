@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import '../../../../core/services/location_service.dart';
 
 class MapLocationPicker extends StatefulWidget {
   final double initialLatitude;
@@ -30,6 +31,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
   late int _currentRadius;
   late MapController _mapController;
   bool _isLoading = false;
+  bool _isGettingLocation = false;
 
   @override
   void initState() {
@@ -38,6 +40,80 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
     _selectedLongitude = widget.initialLongitude;
     _currentRadius = widget.coverageRadius;
     _mapController = MapController();
+  }
+
+  Future<void> _getCurrentLocation() async {
+    setState(() {
+      _isGettingLocation = true;
+    });
+
+    try {
+      final position = await LocationService.instance.getCurrentLocation(
+        forceRefresh: true,
+      );
+
+      if (position != null) {
+        setState(() {
+          _selectedLatitude = position.latitude;
+          _selectedLongitude = position.longitude;
+        });
+
+        // Move map to current location
+        _mapController.move(
+          LatLng(position.latitude, position.longitude),
+          15.0,
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Location updated with ${position.accuracy.toStringAsFixed(0)}m accuracy',
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        String errorMessage = 'Failed to get location';
+
+        if (e.toString().contains('permissions')) {
+          errorMessage =
+              'Location permission required. Please enable in settings.';
+        } else if (e.toString().contains('disabled')) {
+          errorMessage =
+              'Location services disabled. Please enable in device settings.';
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            action: SnackBarAction(
+              label: 'Settings',
+              textColor: Colors.white,
+              onPressed: () {
+                if (e.toString().contains('permissions')) {
+                  LocationService.instance.openAppSettings();
+                } else {
+                  LocationService.instance.openLocationSettings();
+                }
+              },
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGettingLocation = false;
+        });
+      }
+    }
   }
 
   @override
@@ -52,8 +128,36 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
         foregroundColor: theme.colorScheme.onSurface,
         elevation: 0,
         actions: [
-          TextButton(onPressed: _confirmLocation, child: const Text('Confirm')),
-          const SizedBox(width: 16),
+          IconButton(
+            icon: _isGettingLocation
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.my_location),
+            onPressed: _isGettingLocation ? null : _getCurrentLocation,
+            tooltip: 'Get current location',
+          ),
+          TextButton(
+            onPressed: _isLoading
+                ? null
+                : () {
+                    Navigator.pop(context, {
+                      'latitude': _selectedLatitude,
+                      'longitude': _selectedLongitude,
+                      'radius': _currentRadius,
+                    });
+                  },
+            child: _isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Done'),
+          ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Stack(
@@ -560,70 +664,5 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
         ],
       ),
     );
-  }
-
-  Future<void> _getCurrentLocation() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        throw 'Location services are disabled.';
-      }
-
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          throw 'Location permissions are denied';
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        throw 'Location permissions are permanently denied';
-      }
-
-      Position position = await Geolocator.getCurrentPosition();
-
-      setState(() {
-        _selectedLatitude = position.latitude;
-        _selectedLongitude = position.longitude;
-      });
-
-      // Move map to current location with appropriate zoom
-      _mapController.move(LatLng(_selectedLatitude, _selectedLongitude), 18.0);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Current location updated'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to get location: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  void _confirmLocation() {
-    Navigator.pop(context, {
-      'latitude': _selectedLatitude,
-      'longitude': _selectedLongitude,
-      'radius': _currentRadius,
-    });
   }
 }

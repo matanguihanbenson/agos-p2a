@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
+import '../../../../core/services/location_service.dart';
 import 'map_location_picker.dart';
 
 class EditScheduleScreen extends StatefulWidget {

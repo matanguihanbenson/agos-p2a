@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
-
+import '../../../../core/services/location_service.dart';
 import 'map_location_picker.dart';
 
 class CreateScheduleScreen extends StatefulWidget {
@@ -503,9 +503,7 @@ class _CreateScheduleScreenState extends State<CreateScheduleScreen> {
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
-            onPressed: _isGettingLocation
-                ? null
-                : _useCurrentLocationForDocking,
+            onPressed: _isGettingLocation ? null : _getCurrentLocation,
             icon: _isGettingLocation
                 ? const SizedBox(
                     width: 16,
@@ -702,57 +700,73 @@ class _CreateScheduleScreenState extends State<CreateScheduleScreen> {
     }
   }
 
-  Future<void> _useCurrentLocationForDocking() async {
+  Future<void> _getCurrentLocation() async {
     setState(() {
       _isGettingLocation = true;
     });
 
     try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        throw 'Location services are disabled.';
-      }
+      final position = await LocationService.instance.getCurrentLocation(
+        forceRefresh: true,
+      );
 
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          throw 'Location permissions are denied';
+      if (position != null) {
+        setState(() {
+          _latitude = position.latitude;
+          _longitude = position.longitude;
+          _dockingLatitude = position.latitude;
+          _dockingLongitude = position.longitude;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Location updated with ${position.accuracy.toStringAsFixed(0)}m accuracy',
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        throw 'Location permissions are permanently denied';
-      }
-
-      Position position = await Geolocator.getCurrentPosition();
-
-      setState(() {
-        _dockingLatitude = position.latitude;
-        _dockingLongitude = position.longitude;
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Current location set as docking point'),
-            duration: Duration(seconds: 2),
-          ),
-        );
       }
     } catch (e) {
       if (mounted) {
+        String errorMessage = 'Failed to get location';
+
+        if (e.toString().contains('permissions')) {
+          errorMessage =
+              'Location permission required. Please grant location access.';
+        } else if (e.toString().contains('disabled')) {
+          errorMessage =
+              'Location services disabled. Please enable in device settings.';
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to get location: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            action: SnackBarAction(
+              label: 'Settings',
+              textColor: Colors.white,
+              onPressed: () {
+                if (e.toString().contains('permissions')) {
+                  LocationService.instance.openAppSettings();
+                } else {
+                  LocationService.instance.openLocationSettings();
+                }
+              },
+            ),
           ),
         );
       }
     } finally {
-      setState(() {
-        _isGettingLocation = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isGettingLocation = false;
+        });
+      }
     }
   }
 
