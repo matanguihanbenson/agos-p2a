@@ -35,10 +35,14 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
   String? _currentUserId;
   Set<String> _allowedBotIds = {};
 
+  bool _isMapLoading = true;
+  String? _mapError;
+
   @override
   void initState() {
     super.initState();
     _initializeUser();
+    _checkMapTiles();
   }
 
   @override
@@ -59,7 +63,10 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
 
   Future<void> _getUserRole() async {
     try {
-      final userDoc = await _firestore.collection('users').doc(_currentUserId).get();
+      final userDoc = await _firestore
+          .collection('users')
+          .doc(_currentUserId)
+          .get();
       if (userDoc.exists) {
         _currentUserRole = userDoc.data()?['role'];
       }
@@ -92,11 +99,26 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
         for (var doc in querySnapshot.docs) {
           _botNames[doc.id] = doc.data()['name'] ?? 'Bot ${doc.id}';
         }
+      } else {
+        // For other roles or if role is not recognized, show no bots
+        _allowedBotIds = <String>{};
+        _botNames = <String, String>{};
       }
+
+      print('Current user role: $_currentUserRole');
+      print('Current user ID: $_currentUserId');
       print('Allowed bot IDs: $_allowedBotIds');
       print('Bot names: $_botNames');
+
+      // If no bots are found for field operator, show a message
+      if (_currentUserRole == 'field_operator' && _allowedBotIds.isEmpty) {
+        print('No bots assigned to this field operator');
+      }
     } catch (e) {
       print('Error getting allowed bot IDs: $e');
+      // Reset to empty sets on error
+      _allowedBotIds = <String>{};
+      _botNames = <String, String>{};
     }
   }
 
@@ -141,7 +163,13 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
         botsData.forEach((key, value) {
           final botId = key.toString();
 
-          if (!_allowedBotIds.contains(botId)) return;
+          // Only process bots that are in the allowed list for this user
+          if (!_allowedBotIds.contains(botId)) {
+            print(
+              'Bot $botId not in allowed list for user $_currentUserId (role: $_currentUserRole)',
+            );
+            return;
+          }
 
           if (value is Map) {
             final lat = value['lat'];
@@ -152,7 +180,7 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
               final lngDouble = (lng as num).toDouble();
               updatedLocations[botId] = LatLng(latDouble, lngDouble);
               updatedDetails[botId] = {
-                'name': value['name'] ?? 'Bot $botId',
+                'name': value['name'] ?? _botNames[botId] ?? 'Bot $botId',
                 'status': value['status'] ?? 'unknown',
                 'active': value['active'] ?? false,
                 'battery': value['battery'] ?? 0,
@@ -160,7 +188,9 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
               };
 
               if (!_botAddresses.containsKey(botId)) {
-                _getAddressFromCoordinates(latDouble, lngDouble).then((address) {
+                _getAddressFromCoordinates(latDouble, lngDouble).then((
+                  address,
+                ) {
                   if (mounted) {
                     setState(() {
                       _botAddresses[botId] = address;
@@ -219,7 +249,9 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
     if (botDetail == null) return;
 
     if (!_botAddresses.containsKey(botId)) {
-      _getAddressFromCoordinates(position.latitude, position.longitude).then((address) {
+      _getAddressFromCoordinates(position.latitude, position.longitude).then((
+        address,
+      ) {
         if (mounted) {
           setState(() {
             _botAddresses[botId] = address;
@@ -736,7 +768,9 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(8),
                           border: _selectedBotId == botId
-                              ? Border.all(color: colorScheme.primary.withOpacity(0.3))
+                              ? Border.all(
+                                  color: colorScheme.primary.withOpacity(0.3),
+                                )
                               : null,
                         ),
                         child: ListTile(
@@ -747,8 +781,14 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: isActive
-                                    ? [const Color(0xFF4CAF50), const Color(0xFF2E7D32)]
-                                    : [const Color(0xFFE57373), const Color(0xFFD32F2F)],
+                                    ? [
+                                        const Color(0xFF4CAF50),
+                                        const Color(0xFF2E7D32),
+                                      ]
+                                    : [
+                                        const Color(0xFFE57373),
+                                        const Color(0xFFD32F2F),
+                                      ],
                               ),
                               shape: BoxShape.circle,
                             ),
@@ -808,10 +848,132 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
     );
   }
 
+  Future<void> _checkMapTiles() async {
+    try {
+      final response = await http
+          .get(
+            Uri.parse('https://tile.openstreetmap.org/1/0/0.png'),
+            headers: {'User-Agent': 'AgosBotTracker/1.0'},
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _isMapLoading = false;
+          _mapError = null;
+        });
+      } else {
+        setState(() {
+          _isMapLoading = false;
+          _mapError = 'Map tiles server returned ${response.statusCode}';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isMapLoading = false;
+        _mapError = 'Failed to load map tiles: $e';
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final theme = Theme.of(context);
+
+    // Show loading or error state
+    if (_isMapLoading) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text('Loading map...', style: theme.textTheme.bodyLarge),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_mapError != null) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 64, color: colorScheme.error),
+              const SizedBox(height: 16),
+              Text(
+                'Map Error',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  color: colorScheme.error,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  _mapError!,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _isMapLoading = true;
+                    _mapError = null;
+                  });
+                  _checkMapTiles();
+                },
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Show message if no bots are available for field operator
+    if (_currentUserRole == 'field_operator' &&
+        _botLocations.isEmpty &&
+        !_isMapLoading) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.directions_boat_outlined,
+                size: 64,
+                color: colorScheme.outline,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No Bots Assigned',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  'You have no bots assigned to you. Please contact your administrator.',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     final markers = _botLocations.entries.map((entry) {
       final botId = entry.key;
@@ -862,15 +1024,12 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
       final botId = entry.key;
       final position = entry.value;
       final currentZoom = _mapController.camera.zoom;
-      
+
       // Calculate dynamic offset based on zoom level - more offset at higher zoom levels
       final latOffset = 0.0001 * (21 - currentZoom).clamp(1, 15);
-      
+
       return Marker(
-        point: LatLng(
-          position.latitude - latOffset,
-          position.longitude,
-        ),
+        point: LatLng(position.latitude - latOffset, position.longitude),
         width: 120,
         height: 50,
         child: Center(
@@ -900,8 +1059,17 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
             ),
             children: [
               TileLayer(
-                urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                subdomains: const ['a', 'b', 'c'],
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.agos.bottracker',
+                maxZoom: 19,
+                maxNativeZoom: 19,
+                tileSize: 256,
+                additionalOptions: const {
+                  'attribution': '© OpenStreetMap contributors',
+                },
+                errorTileCallback: (tile, error, stackTrace) {
+                  print('Tile loading error: $error');
+                },
               ),
               MarkerLayer(markers: markers),
               MarkerLayer(markers: labelMarkers),
@@ -909,11 +1077,7 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
           ),
 
           // Zoom controls (left side)
-          Positioned(
-            top: 30,
-            left: 16,
-            child: _buildControlPanel(),
-          ),
+          Positioned(top: 30, left: 16, child: _buildControlPanel()),
 
           // Floating recenter button
           Positioned(
@@ -949,11 +1113,16 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
                       });
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: colorScheme.surface.withOpacity(0.95),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
+                        border: Border.all(
+                          color: colorScheme.outline.withOpacity(0.2),
+                        ),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.05),
@@ -980,8 +1149,8 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
                           ),
                           const SizedBox(width: 4),
                           Icon(
-                            _isBotListExpanded 
-                                ? Icons.keyboard_arrow_up 
+                            _isBotListExpanded
+                                ? Icons.keyboard_arrow_up
                                 : Icons.keyboard_arrow_down,
                             size: 16,
                             color: colorScheme.onSurface.withOpacity(0.6),

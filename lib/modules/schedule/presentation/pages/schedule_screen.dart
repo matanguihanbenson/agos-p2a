@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/schedule_card.dart';
 import '../widgets/schedule_filter_bar.dart';
+import 'edit_schedule_screen.dart';
 
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
@@ -12,7 +13,7 @@ class ScheduleScreen extends StatefulWidget {
 class _ScheduleScreenState extends State<ScheduleScreen> {
   String _selectedFilter = 'all';
   bool _isLoading = false;
-  
+
   // Mock data - replace with actual Firestore data
   final List<Map<String, dynamic>> _schedules = [
     {
@@ -53,7 +54,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       backgroundColor: theme.colorScheme.background,
       appBar: AppBar(
@@ -67,13 +68,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         elevation: 0,
         actions: [
           IconButton(
-            icon: _isLoading 
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.refresh_outlined),
+            icon: _isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.refresh_outlined),
             onPressed: _isLoading ? null : _refreshSchedules,
             tooltip: 'Refresh schedules',
           ),
@@ -91,9 +92,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             },
             schedules: _schedules,
           ),
-          Expanded(
-            child: _buildScheduleList(),
-          ),
+          Expanded(child: _buildScheduleList()),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -105,8 +104,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   Widget _buildScheduleList() {
-    final filteredSchedules = _selectedFilter == 'all' 
-        ? _schedules 
+    final filteredSchedules = _selectedFilter == 'all'
+        ? _schedules
         : _schedules.where((s) => s['status'] == _selectedFilter).toList();
 
     if (filteredSchedules.isEmpty) {
@@ -121,9 +120,15 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         return ScheduleCard(
           schedule: schedule,
           onView: () => _viewScheduleDetails(schedule),
-          onEdit: schedule['status'] == 'scheduled' ? () => _editSchedule(schedule) : null,
-          onCancel: schedule['status'] == 'scheduled' ? () => _cancelSchedule(schedule) : null,
-          onRecall: schedule['status'] == 'active' ? () => _recallBot(schedule) : null,
+          onEdit: schedule['status'] == 'scheduled'
+              ? () => _editSchedule(schedule)
+              : null,
+          onCancel: schedule['status'] == 'scheduled'
+              ? () => _cancelSchedule(schedule)
+              : null,
+          onRecall: schedule['status'] == 'active'
+              ? () => _recallBot(schedule)
+              : null,
         );
       },
     );
@@ -133,7 +138,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     final theme = Theme.of(context);
     String message;
     IconData icon;
-    
+
     switch (_selectedFilter) {
       case 'scheduled':
         message = 'No scheduled deployments';
@@ -175,9 +180,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            _selectedFilter == 'all' 
-              ? 'Create your first schedule to get started'
-              : 'Try adjusting your filters or create a new schedule',
+            _selectedFilter == 'all'
+                ? 'Create your first schedule to get started'
+                : 'Try adjusting your filters or create a new schedule',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurface.withOpacity(0.5),
             ),
@@ -215,10 +220,18 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   void _editSchedule(Map<String, dynamic> schedule) {
-    // Navigate to edit schedule screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Edit schedule for ${schedule['bot_id']}')),
-    );
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(
+            builder: (context) => EditScheduleScreen(schedule: schedule),
+          ),
+        )
+        .then((result) {
+          if (result == true) {
+            // Schedule was updated, refresh the list
+            _refreshSchedules();
+          }
+        });
   }
 
   void _cancelSchedule(Map<String, dynamic> schedule) {
@@ -226,7 +239,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Cancel Schedule'),
-        content: Text('Are you sure you want to cancel the schedule for ${schedule['bot_id']}?'),
+        content: Text(
+          'Are you sure you want to cancel the schedule for ${schedule['bot_id']}?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -277,14 +292,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     setState(() {
       _isLoading = true;
     });
-    
+
     // Simulate API call
     await Future.delayed(const Duration(seconds: 1));
-    
+
     setState(() {
       _isLoading = false;
     });
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -295,4 +310,3 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     }
   }
 }
-      

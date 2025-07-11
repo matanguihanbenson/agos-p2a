@@ -26,7 +26,7 @@ class MainApp extends StatelessWidget {
     return MaterialApp(
       title: 'AGOS',
       theme: AppTheme.lightTheme,
-      initialRoute: AppRoutes.login,
+      initialRoute: AppRoutes.splash,
       onGenerateRoute: RouteGenerator.generateRoute,
       debugShowCheckedModeBanner: false,
     );
