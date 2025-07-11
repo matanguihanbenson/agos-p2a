@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../widgets/schedule_card.dart';
 import '../widgets/schedule_filter_bar.dart';
 import 'edit_schedule_screen.dart';
+import 'create_schedule_screen.dart';
 
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
@@ -206,10 +207,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   void _createNewSchedule() {
-    // Navigate to create schedule screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Create new schedule feature coming soon')),
-    );
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(builder: (context) => const CreateScheduleScreen()),
+        )
+        .then((result) {
+          if (result == true) {
+            // Schedule was created, refresh the list
+            _refreshSchedules();
+          }
+        });
   }
 
   void _viewScheduleDetails(Map<String, dynamic> schedule) {

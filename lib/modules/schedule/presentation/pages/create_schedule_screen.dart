@@ -1,72 +1,62 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
+
 import 'map_location_picker.dart';
 
-class EditScheduleScreen extends StatefulWidget {
-  final Map<String, dynamic> schedule;
-
-  const EditScheduleScreen({super.key, required this.schedule});
+class CreateScheduleScreen extends StatefulWidget {
+  const CreateScheduleScreen({super.key});
 
   @override
-  State<EditScheduleScreen> createState() => _EditScheduleScreenState();
+  State<CreateScheduleScreen> createState() => _CreateScheduleScreenState();
 }
 
-class _EditScheduleScreenState extends State<EditScheduleScreen> {
+class _CreateScheduleScreenState extends State<CreateScheduleScreen> {
   final _formKey = GlobalKey<FormState>();
   final _notesController = TextEditingController();
-  final _radiusController = TextEditingController();
+  final _radiusController = TextEditingController(text: '100');
 
-  late String _botId;
-  late DateTime _startDate;
-  late TimeOfDay _startTime;
-  late DateTime _endDate;
-  late TimeOfDay _endTime;
-  late double _latitude;
-  late double _longitude;
-  late double _dockingLatitude;
-  late double _dockingLongitude;
+  String? _selectedBotId;
+  DateTime _startDate = DateTime.now().add(const Duration(hours: 1));
+  TimeOfDay _startTime = TimeOfDay.now();
+  DateTime _endDate = DateTime.now().add(const Duration(hours: 1));
+  TimeOfDay _endTime = TimeOfDay.now();
+  double _latitude = 14.5995;
+  double _longitude = 120.9842;
+  double _dockingLatitude = 14.5995;
+  double _dockingLongitude = 120.9842;
 
   bool _isLoading = false;
   bool _isGettingLocation = false;
 
+  // Mock available bots - replace with actual data
+  final List<String> _availableBots = [
+    'BOT-001',
+    'BOT-002',
+    'BOT-003',
+    'BOT-004',
+    'BOT-005',
+  ];
+
   @override
   void initState() {
     super.initState();
-    _initializeFields();
+    _initializeDefaultTimes();
   }
 
-  void _initializeFields() {
-    final schedule = widget.schedule;
-    _botId = schedule['bot_id'];
+  void _initializeDefaultTimes() {
+    final now = DateTime.now();
+    final startDateTime = now.add(const Duration(hours: 1));
+    final endDateTime = startDateTime.add(const Duration(hours: 2));
 
-    final startDateTime = schedule['deployment_start'] as DateTime;
     _startDate = DateTime(
       startDateTime.year,
       startDateTime.month,
       startDateTime.day,
     );
     _startTime = TimeOfDay.fromDateTime(startDateTime);
-
-    final endDateTime = schedule['deployment_end'] as DateTime;
     _endDate = DateTime(endDateTime.year, endDateTime.month, endDateTime.day);
     _endTime = TimeOfDay.fromDateTime(endDateTime);
-
-    _latitude = schedule['area_center']['latitude'];
-    _longitude = schedule['area_center']['longitude'];
-
-    // Initialize docking point (fallback to area center if not exists)
-    final dockingPoint = schedule['docking_point'];
-    if (dockingPoint != null) {
-      _dockingLatitude = dockingPoint['latitude'];
-      _dockingLongitude = dockingPoint['longitude'];
-    } else {
-      _dockingLatitude = _latitude;
-      _dockingLongitude = _longitude;
-    }
-
-    _notesController.text = schedule['notes'] ?? '';
-    _radiusController.text = schedule['area_radius_m'].toString();
   }
 
   @override
@@ -83,20 +73,20 @@ class _EditScheduleScreenState extends State<EditScheduleScreen> {
     return Scaffold(
       backgroundColor: theme.colorScheme.background,
       appBar: AppBar(
-        title: const Text('Edit Schedule'),
+        title: const Text('Create Schedule'),
         backgroundColor: theme.colorScheme.surface,
         foregroundColor: theme.colorScheme.onSurface,
         elevation: 0,
         actions: [
           TextButton(
-            onPressed: _isLoading ? null : _saveSchedule,
+            onPressed: _isLoading ? null : _createSchedule,
             child: _isLoading
                 ? const SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('Save'),
+                : const Text('Create'),
           ),
           const SizedBox(width: 16),
         ],
@@ -108,7 +98,7 @@ class _EditScheduleScreenState extends State<EditScheduleScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildBotInfo(theme),
+              _buildBotSelectionSection(theme),
               const SizedBox(height: 32),
               _buildDateTimeSection(theme),
               const SizedBox(height: 32),
@@ -125,31 +115,73 @@ class _EditScheduleScreenState extends State<EditScheduleScreen> {
     );
   }
 
-  Widget _buildBotInfo(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.directions_boat,
-            color: theme.colorScheme.primary,
-            size: 20,
+  Widget _buildBotSelectionSection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Bot Selection',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
           ),
-          const SizedBox(width: 12),
-          Text(
-            'Editing schedule for $_botId',
-            style: theme.textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.w500,
-              color: theme.colorScheme.onSurface,
+        ),
+        const SizedBox(height: 16),
+        DropdownButtonFormField<String>(
+          value: _selectedBotId,
+          decoration: InputDecoration(
+            labelText: 'Select Bot',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
+            prefixIcon: const Icon(Icons.directions_boat),
+          ),
+          items: _availableBots.map((botId) {
+            return DropdownMenuItem(value: botId, child: Text(botId));
+          }).toList(),
+          onChanged: (value) {
+            setState(() {
+              _selectedBotId = value;
+            });
+          },
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please select a bot';
+            }
+            return null;
+          },
+        ),
+        if (_selectedBotId != null) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: theme.colorScheme.outline.withOpacity(0.2),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  size: 16,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Bot $_selectedBotId is available for deployment',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
-      ),
+      ],
     );
   }
 
@@ -340,6 +372,7 @@ class _EditScheduleScreenState extends State<EditScheduleScreen> {
               vertical: 12,
             ),
             suffixText: 'm',
+            helperText: 'Recommended: 50-200m for optimal coverage',
           ),
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -514,7 +547,7 @@ class _EditScheduleScreenState extends State<EditScheduleScreen> {
               horizontal: 16,
               vertical: 12,
             ),
-            hintText: 'Add any special instructions...',
+            hintText: 'Add any special instructions or deployment details...',
           ),
           maxLines: 3,
           maxLength: 500,
@@ -723,7 +756,7 @@ class _EditScheduleScreenState extends State<EditScheduleScreen> {
     }
   }
 
-  Future<void> _saveSchedule() async {
+  Future<void> _createSchedule() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -750,24 +783,46 @@ class _EditScheduleScreenState extends State<EditScheduleScreen> {
       return;
     }
 
+    if (startDateTime.isBefore(DateTime.now())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Start time must be in the future')),
+      );
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
 
     try {
-      // TODO: Implement save functionality
+      // TODO: Implement create functionality
+      final scheduleData = {
+        'bot_id': _selectedBotId,
+        'deployment_start': startDateTime,
+        'deployment_end': endDateTime,
+        'area_center': {'latitude': _latitude, 'longitude': _longitude},
+        'area_radius_m': int.parse(_radiusController.text),
+        'docking_point': {
+          'latitude': _dockingLatitude,
+          'longitude': _dockingLongitude,
+        },
+        'notes': _notesController.text.trim(),
+        'status': 'scheduled',
+        'created_at': DateTime.now(),
+      };
+
       await Future.delayed(const Duration(seconds: 1)); // Simulate API call
 
       if (mounted) {
         Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Schedule updated successfully')),
+          const SnackBar(content: Text('Schedule created successfully')),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update schedule: $e')),
+          SnackBar(content: Text('Failed to create schedule: $e')),
         );
       }
     } finally {
