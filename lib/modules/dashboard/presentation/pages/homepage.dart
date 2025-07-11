@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/theme/theme.dart';
 import '../../../../core/providers/user_providers.dart';
 import '../../../notifications/presentation/pages/notification_screen.dart';
@@ -13,6 +14,26 @@ import '../../widgets/quick_actions_widget.dart';
 import '../../widgets/environmental_data_card.dart';
 import '../../widgets/recent_activity_widget.dart';
 
+// Add provider for user's first name
+final userFirstNameProvider = FutureProvider<String>((ref) async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return 'Guest';
+
+  try {
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    if (doc.exists && doc.data() != null) {
+      return doc.data()!['firstname'] ?? 'Guest';
+    }
+    return 'Guest';
+  } catch (e) {
+    return 'Guest';
+  }
+});
+
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
@@ -21,6 +42,7 @@ class HomePage extends ConsumerWidget {
     final user = FirebaseAuth.instance.currentUser;
     final theme = Theme.of(context);
     final userRoleAsync = ref.watch(userRoleProvider);
+    final userFirstNameAsync = ref.watch(userFirstNameProvider);
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
@@ -118,14 +140,34 @@ class HomePage extends ConsumerWidget {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                Text(
-                                  user.email?.split('@')[0] ?? 'Guest',
-                                  style: theme.textTheme.displayMedium
-                                      ?.copyWith(
-                                        fontSize: 28,
-                                        fontWeight: FontWeight.w800,
-                                        color: theme.colorScheme.onBackground,
-                                      ),
+                                userFirstNameAsync.when(
+                                  data: (firstName) => Text(
+                                    firstName,
+                                    style: theme.textTheme.displayMedium
+                                        ?.copyWith(
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.w800,
+                                          color: theme.colorScheme.onBackground,
+                                        ),
+                                  ),
+                                  loading: () => Text(
+                                    'Loading...',
+                                    style: theme.textTheme.displayMedium
+                                        ?.copyWith(
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.w800,
+                                          color: theme.colorScheme.onBackground,
+                                        ),
+                                  ),
+                                  error: (_, __) => Text(
+                                    'Guest',
+                                    style: theme.textTheme.displayMedium
+                                        ?.copyWith(
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.w800,
+                                          color: theme.colorScheme.onBackground,
+                                        ),
+                                  ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
