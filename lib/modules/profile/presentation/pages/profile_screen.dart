@@ -66,13 +66,6 @@ class _ProfileBody extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Profile'),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.edit_outlined),
-              onPressed: () =>
-                  ProfileDialogs.showEditProfileDialog(context, userProfile),
-            ),
-          ],
           bottom: TabBar(
             indicatorColor: Colors.white,
             labelColor: Colors.white,
