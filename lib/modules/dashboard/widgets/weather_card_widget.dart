@@ -1,9 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'dart:async';
 import '../../../../core/theme/theme.dart';
 
-class WeatherCardWidget extends StatelessWidget {
+class WeatherCardWidget extends StatefulWidget {
   const WeatherCardWidget({super.key});
+
+  @override
+  State<WeatherCardWidget> createState() => _WeatherCardWidgetState();
+}
+
+class _WeatherCardWidgetState extends State<WeatherCardWidget> {
+  late Timer _timer;
+  DateTime _currentTime = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        _currentTime = DateTime.now();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +70,7 @@ class WeatherCardWidget extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    DateFormat.yMMMMd().format(DateTime.now()),
+                    DateFormat.yMMMMd().format(_currentTime),
                     style: theme.textTheme.bodyLarge?.copyWith(
                       color: Colors.white,
                       fontSize: 16,
@@ -67,7 +92,7 @@ class WeatherCardWidget extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}',
+                    DateFormat.Hm().format(_currentTime),
                     style: theme.textTheme.bodyLarge?.copyWith(
                       color: Colors.white,
                       fontSize: 16,
