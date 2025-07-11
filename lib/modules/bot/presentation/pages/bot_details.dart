@@ -9,6 +9,7 @@ import '../widgets/bot_details/user_actions.dart';
 import '../widgets/bot_details/location_tab.dart';
 import '../widgets/bot_details/technical_tab.dart';
 import '../widgets/bot_details/assignment_card.dart';
+import '../../../../routes/app_routes.dart'; // Add this import
 
 class BotDetailsPage extends StatefulWidget {
   final DocumentSnapshot doc;
@@ -144,6 +145,77 @@ class _BotDetailsPageState extends State<BotDetailsPage>
               ),
             ),
 
+            // Quick Control Access
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: cs.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: cs.primary.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.settings_remote_rounded,
+                      color: cs.primary,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Remote Control',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: cs.primary,
+                            ),
+                          ),
+                          Text(
+                            'Control bot movement and operations',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: cs.onSurface.withOpacity(0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushNamed(
+                          context,
+                          AppRoutes.botControl,
+                          arguments: widget.doc,
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: cs.primary,
+                        foregroundColor: cs.onPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        'Control',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
             // Tabs
             Container(
               margin: const EdgeInsets.all(16),
@@ -194,8 +266,9 @@ class _BotDetailsPageState extends State<BotDetailsPage>
             ? AdminActions(
                 docRef: widget.doc.reference,
                 assignedTo: assignedUid,
+                botDoc: widget.doc,
               )
-            : UserActions(),
+            : UserActions(botDoc: widget.doc),
       ),
     );
   }

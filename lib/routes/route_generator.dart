@@ -6,6 +6,7 @@ import '../core/widgets/navigation/bottom_navigation.dart';
 import '../modules/bot/presentation/pages/bot_details.dart';
 import '../modules/bot/presentation/pages/live_feed_screen.dart';
 import '../modules/bot/presentation/pages/bot_list_page.dart'; // Add this import
+import '../modules/bot/presentation/pages/bot_control_screen.dart'; // Add this import
 import 'app_routes.dart';
 
 class RouteGenerator {
@@ -40,6 +41,19 @@ class RouteGenerator {
       case AppRoutes.botSelection:
         final args = settings.arguments as Map<String, dynamic>?;
         return MaterialPageRoute(builder: (_) => BotListPage(arguments: args));
+
+      // Add bot control route
+      case AppRoutes.botControl:
+        final botDoc = settings.arguments as DocumentSnapshot<Object?>?;
+        if (botDoc != null) {
+          return MaterialPageRoute(
+            builder: (_) => BotControlScreen(botDoc: botDoc),
+          );
+        }
+        return MaterialPageRoute(
+          builder: (_) =>
+              const Scaffold(body: Center(child: Text('Bot data required'))),
+        );
 
       default:
         return MaterialPageRoute(

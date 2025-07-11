@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'dart:async';
 import '../pages/bot_details.dart';
+import '../../../../routes/app_routes.dart'; // Add this import
 
 class BotCard extends StatefulWidget {
   final DocumentSnapshot doc;
@@ -471,7 +472,15 @@ class _BotCardState extends State<BotCard> {
         _buildActionButton(
           icon: Icons.settings_remote_rounded,
           label: compact ? '' : 'Control',
-          onPressed: widget.onControl,
+          onPressed:
+              widget.onControl ??
+              () {
+                Navigator.pushNamed(
+                  context,
+                  AppRoutes.botControl,
+                  arguments: widget.doc,
+                );
+              },
           isPrimary: true,
           colorScheme: colorScheme,
           compact: compact,
@@ -492,7 +501,15 @@ class _BotCardState extends State<BotCard> {
       height: compact ? 32 : 36,
       child: isPrimary
           ? ElevatedButton.icon(
-              onPressed: onPressed,
+              onPressed:
+                  onPressed ??
+                  () {
+                    Navigator.pushNamed(
+                      context,
+                      AppRoutes.botControl,
+                      arguments: widget.doc,
+                    );
+                  },
               icon: Icon(icon, size: compact ? 14 : 16),
               label: label.isNotEmpty
                   ? Text(
@@ -515,7 +532,15 @@ class _BotCardState extends State<BotCard> {
               ),
             )
           : OutlinedButton.icon(
-              onPressed: onPressed,
+              onPressed:
+                  onPressed ??
+                  () {
+                    Navigator.pushNamed(
+                      context,
+                      AppRoutes.liveFeed,
+                      arguments: widget.doc,
+                    );
+                  },
               icon: Icon(icon, size: compact ? 14 : 16),
               label: label.isNotEmpty
                   ? Text(

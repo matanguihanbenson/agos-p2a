@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../../../../routes/app_routes.dart'; // Add this import
 
 class AdminActions extends StatelessWidget {
   final DocumentReference docRef;
@@ -73,7 +74,17 @@ class AdminActions extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: ElevatedButton.icon(
-                onPressed: () => _showComingSoon(context, 'Control'),
+                onPressed: () {
+                  if (botDoc != null) {
+                    Navigator.pushNamed(
+                      context,
+                      AppRoutes.botControl,
+                      arguments: botDoc,
+                    );
+                  } else {
+                    _showComingSoon(context, 'Control');
+                  }
+                },
                 icon: const Icon(Icons.settings_remote_rounded, size: 18),
                 label: const Text('Control'),
               ),
