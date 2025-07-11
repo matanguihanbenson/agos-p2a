@@ -25,6 +25,8 @@ dependencies:
   url_launcher: ^6.3.2
   fl_chart: ^1.0.0
   geolocator: ^14.0.2
+  mobile_scanner: ^5.1.1
+  permission_handler: ^11.3.1
 
 dev_dependencies:
   flutter_test:

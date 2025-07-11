@@ -7,6 +7,8 @@ import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
+import 'dart:core';
+import 'dart:io' show SocketException;
 import 'package:flutter/foundation.dart';
 import 'safe_map_wrapper.dart';
 
@@ -123,30 +125,155 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
   }
 
   String _proxiedUrl(String url) {
+    // Only use proxy for web platform due to CORS restrictions
     if (kIsWeb) {
-      return 'https://api.allorigins.win/raw?url=${Uri.encodeComponent(url)}';
+      // Try multiple proxy options for better reliability
+      return 'https://api.codetabs.com/v1/proxy?quest=${Uri.encodeComponent(url)}';
+      // Alternative: return 'https://api.allorigins.win/raw?url=${Uri.encodeComponent(url)}';
+      // Alternative: return 'https://cors-anywhere.herokuapp.com/$url';
     }
+    // Mobile platforms can make direct requests
     return url;
   }
 
   Future<String> _getAddressFromCoordinates(double lat, double lng) async {
     try {
+      // Use OpenStreetMap Nominatim API
       final url =
-          'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=$lat&lon=$lng';
-      final proxiedUrl = _proxiedUrl(url);
-      final response = await http.get(Uri.parse(proxiedUrl));
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return data['display_name'] ?? 'Address not found';
-      } else {
-        return 'Unable to get address';
+          'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=$lat&lon=$lng&accept-language=en&addressdetails=1';
+
+      final requestUrl = _proxiedUrl(url);
+
+      // Add proper headers for mobile requests
+      final headers = <String, String>{
+        'User-Agent': 'FlutterApp/1.0 (contact@yourapp.com)',
+        'Accept': 'application/json',
+        'Accept-Language': 'en',
+      };
+
+      print('Requesting address for coordinates: $lat, $lng');
+      print('Request URL: $requestUrl');
+      print('Platform: ${kIsWeb ? 'Web' : 'Mobile'}');
+
+      final response = await http
+          .get(
+            Uri.parse(requestUrl),
+            headers: kIsWeb ? {} : headers, // Use empty headers for web proxy
+          )
+          .timeout(
+            const Duration(seconds: 15), // Increased timeout for web
+            onTimeout: () {
+              throw TimeoutException(
+                'Address request timed out',
+                const Duration(seconds: 15),
+              );
+            },
+          );
+
+      print('Address response status: ${response.statusCode}');
+      print('Address response headers: ${response.headers}');
+      print('Address response body length: ${response.body.length}');
+
+      if (response.body.isNotEmpty) {
+        print(
+          'Response body preview: ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}',
+        );
       }
-    } on http.ClientException catch (e) {
+
+      if (response.statusCode == 200 && response.body.isNotEmpty) {
+        try {
+          final data = json.decode(response.body);
+          print('Parsed JSON data type: ${data.runtimeType}');
+
+          if (data != null) {
+            // Handle different response formats
+            if (data is Map) {
+              final dataMap = Map<String, dynamic>.from(data);
+              if (dataMap['display_name'] != null) {
+                print('Found display_name: ${dataMap['display_name']}');
+                return dataMap['display_name'];
+              } else if (dataMap['error'] != null) {
+                print('Nominatim API error: ${dataMap['error']}');
+                return 'Address not available (API error)';
+              } else {
+                print('No display_name in response, keys: ${dataMap.keys}');
+                return _formatAddressFromComponents(dataMap);
+              }
+            } else {
+              print('Unexpected data format: ${data.runtimeType}');
+              return 'Address format not supported';
+            }
+          } else {
+            print('Null data received');
+            return 'Address not found';
+          }
+        } catch (e) {
+          print('JSON parsing error: $e');
+          print('Raw response: ${response.body}');
+          return 'Address unavailable (parse error)';
+        }
+      } else if (response.statusCode == 429) {
+        print('Rate limited by Nominatim API');
+        return 'Address temporarily unavailable (rate limited)';
+      } else if (response.statusCode == 403) {
+        print('Forbidden by API or proxy');
+        return 'Address unavailable (access denied)';
+      } else {
+        print('HTTP error: ${response.statusCode}');
+        print('Response body: ${response.body}');
+        return 'Unable to get address (HTTP ${response.statusCode})';
+      }
+    } on TimeoutException catch (e) {
+      print('Timeout error getting address: $e');
+      return kIsWeb
+          ? 'Address unavailable (web timeout)'
+          : 'Address unavailable (timeout)';
+    } on SocketException catch (e) {
       print('Network error getting address: $e');
-      return 'Address unavailable (network error)';
+      return 'Address unavailable (no internet)';
+    } on FormatException catch (e) {
+      print('JSON parsing error getting address: $e');
+      return 'Address unavailable (parse error)';
+    } on http.ClientException catch (e) {
+      print('HTTP client error getting address: $e');
+      return kIsWeb
+          ? 'Address unavailable (web connection error)'
+          : 'Address unavailable (connection error)';
     } catch (e) {
-      print('Error getting address: $e');
-      return 'Address unavailable';
+      print('Unexpected error getting address: $e');
+      return kIsWeb
+          ? 'Address unavailable (web error)'
+          : 'Address unavailable (error)';
+    }
+  }
+
+  String _formatAddressFromComponents(Map<String, dynamic> data) {
+    try {
+      final address = data['address'];
+      if (address != null && address is Map) {
+        final parts = <String>[];
+
+        // Add road/street
+        if (address['road'] != null) parts.add(address['road']);
+        if (address['house_number'] != null) parts.add(address['house_number']);
+
+        // Add locality
+        if (address['city'] != null) parts.add(address['city']);
+        if (address['town'] != null) parts.add(address['town']);
+        if (address['village'] != null) parts.add(address['village']);
+
+        // Add region
+        if (address['state'] != null) parts.add(address['state']);
+        if (address['country'] != null) parts.add(address['country']);
+
+        if (parts.isNotEmpty) {
+          return parts.join(', ');
+        }
+      }
+      return 'Address components not available';
+    } catch (e) {
+      print('Error formatting address components: $e');
+      return 'Address formatting error';
     }
   }
 

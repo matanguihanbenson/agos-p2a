@@ -4,6 +4,8 @@ class BotRegistrationForm extends StatelessWidget {
   final GlobalKey<FormState> formKey;
   final TextEditingController nameController;
   final TextEditingController descriptionController;
+  final TextEditingController
+  organizationController; // Add organization controller
   final String serialNumber;
   final bool isRegistering;
   final VoidCallback onRegister;
@@ -14,6 +16,7 @@ class BotRegistrationForm extends StatelessWidget {
     required this.formKey,
     required this.nameController,
     required this.descriptionController,
+    required this.organizationController, // Add organization controller
     required this.serialNumber,
     required this.isRegistering,
     required this.onRegister,
@@ -22,8 +25,8 @@ class BotRegistrationForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return Form(
       key: formKey,
@@ -69,19 +72,58 @@ class BotRegistrationForm extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          // Bot Name input
+
+          // Bot Name Field
+          Text(
+            'Bot Name',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
           TextFormField(
             controller: nameController,
+            decoration: InputDecoration(
+              labelText: 'Bot Name',
+              hintText: 'Enter a name for this bot',
+              prefixIcon: const Icon(Icons.smart_toy),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: colorScheme.outline.withOpacity(0.5),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: colorScheme.primary, width: 2),
+              ),
+            ),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
-                return 'Bot name is required';
+                return 'Please enter a bot name';
               }
               return null;
             },
+          ),
+          const SizedBox(height: 16),
+
+          // Organization Field (Optional)
+          Text(
+            'Organization (Optional)',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: organizationController,
             decoration: InputDecoration(
-              labelText: 'Bot Name',
-              hintText: 'Enter bot name',
-              prefixIcon: const Icon(Icons.label_outline),
+              labelText: 'Organization',
+              hintText: 'Divine Word College of Calapan',
+              prefixIcon: const Icon(Icons.business),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -98,14 +140,22 @@ class BotRegistrationForm extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          // Notes / Description
+
+          // Notes Field
+          Text(
+            'Notes (Optional)',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
           TextFormField(
             controller: descriptionController,
             maxLines: 3,
             decoration: InputDecoration(
               labelText: 'Notes',
-              hintText: 'Enter any notes for this bot',
-              prefixIcon: const Icon(Icons.description_outlined),
+              hintText: 'Add any notes or description for this bot',
+              prefixIcon: const Icon(Icons.notes),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -121,6 +171,7 @@ class BotRegistrationForm extends StatelessWidget {
               ),
             ),
           ),
+
           const SizedBox(height: 32),
           // Register Button
           SizedBox(

@@ -49,7 +49,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '1075675221951',
     projectId: 'p2a-hackathon',
     authDomain: 'p2a-hackathon.firebaseapp.com',
-    databaseURL: 'https://p2a-hackathon-default-rtdb.asia-southeast1.firebasedatabase.app',
+    databaseURL:
+        'https://p2a-hackathon-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'p2a-hackathon.firebasestorage.app',
     measurementId: 'G-BKLMC9QYXL',
   );
@@ -59,7 +60,8 @@ class DefaultFirebaseOptions {
     appId: '1:1075675221951:android:6105bb108a4e6c1ec45b0a',
     messagingSenderId: '1075675221951',
     projectId: 'p2a-hackathon',
-    databaseURL: 'https://p2a-hackathon-default-rtdb.asia-southeast1.firebasedatabase.app',
+    databaseURL:
+        'https://p2a-hackathon-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'p2a-hackathon.firebasestorage.app',
   );
 
@@ -68,7 +70,8 @@ class DefaultFirebaseOptions {
     appId: '1:1075675221951:ios:0dfcc411389fe77ac45b0a',
     messagingSenderId: '1075675221951',
     projectId: 'p2a-hackathon',
-    databaseURL: 'https://p2a-hackathon-default-rtdb.asia-southeast1.firebasedatabase.app',
+    databaseURL:
+        'https://p2a-hackathon-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'p2a-hackathon.firebasestorage.app',
     iosBundleId: 'com.example.agos',
   );
@@ -78,7 +81,8 @@ class DefaultFirebaseOptions {
     appId: '1:1075675221951:ios:0dfcc411389fe77ac45b0a',
     messagingSenderId: '1075675221951',
     projectId: 'p2a-hackathon',
-    databaseURL: 'https://p2a-hackathon-default-rtdb.asia-southeast1.firebasedatabase.app',
+    databaseURL:
+        'https://p2a-hackathon-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'p2a-hackathon.firebasestorage.app',
     iosBundleId: 'com.example.agos',
   );

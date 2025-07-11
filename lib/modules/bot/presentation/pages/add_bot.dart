@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/providers/user_providers.dart';
 import '../widgets/bot_verification_form.dart';
 import '../widgets/bot_registration_form.dart';
+import 'barcode_scanner_screen.dart';
 
 class AddBotScreen extends ConsumerStatefulWidget {
   const AddBotScreen({super.key});
@@ -17,6 +18,8 @@ class _AddBotScreenState extends ConsumerState<AddBotScreen> {
   final _serialNumberController = TextEditingController();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _organizationController =
+      TextEditingController(); // Add organization controller
 
   bool _isVerifying = false;
   bool _isRegistering = false;
@@ -31,6 +34,7 @@ class _AddBotScreenState extends ConsumerState<AddBotScreen> {
     _serialNumberController.dispose();
     _nameController.dispose();
     _descriptionController.dispose();
+    _organizationController.dispose(); // Dispose organization controller
     super.dispose();
   }
 
@@ -124,9 +128,6 @@ class _AddBotScreenState extends ConsumerState<AddBotScreen> {
       final userId = ref.read(currentUserIdProvider);
       if (userId == null) throw Exception('User not logged in');
 
-      // You can use another provider for organization if you want
-      final String organization = "Divine Word College of Calapan";
-
       final botId = _serialNumberController.text.trim();
 
       final botData = {
@@ -137,7 +138,9 @@ class _AddBotScreenState extends ConsumerState<AddBotScreen> {
         'notes': _descriptionController.text.trim(),
         'owner_admin_id': userId,
         'assigned_to': null,
-        'organization': organization,
+        'organization': _organizationController.text.trim().isEmpty
+            ? 'Divine Word College of Calapan'
+            : _organizationController.text.trim(),
         'created_at': FieldValue.serverTimestamp(),
         'updated_at': FieldValue.serverTimestamp(),
       };
@@ -188,14 +191,33 @@ class _AddBotScreenState extends ConsumerState<AddBotScreen> {
     }
   }
 
-  // Barcode scan placeholder (replace with real scanner logic)
+  // Barcode scan handling
   Future<void> _scanBarcode() async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Barcode scanning feature coming soon'),
-        backgroundColor: Colors.blue,
-      ),
-    );
+    try {
+      final result = await Navigator.push<String>(
+        context,
+        MaterialPageRoute(builder: (context) => const BarcodeScannerScreen()),
+      );
+
+      if (result != null && mounted) {
+        // Set the scanned serial number and verify the bot
+        _serialNumberController.text = result;
+        await _verifyBot();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening barcode scanner: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
+    }
   }
 
   void _resetVerification() {
@@ -242,6 +264,8 @@ class _AddBotScreenState extends ConsumerState<AddBotScreen> {
                 formKey: _formKey,
                 nameController: _nameController,
                 descriptionController: _descriptionController,
+                organizationController:
+                    _organizationController, // Add organization controller
                 serialNumber: _serialNumberController.text,
                 isRegistering: _isRegistering,
                 onRegister: _registerBot,

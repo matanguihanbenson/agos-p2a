@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
+import 'dart:async';
+
 import '../../../../core/services/location_service.dart';
 import '../../../../core/services/geocoding_service.dart';
 import 'map_location_picker.dart';
@@ -35,6 +38,9 @@ class _EditScheduleScreenState extends State<EditScheduleScreen> {
   String? _dockingPointAddress;
   bool _isGeocodingOperationArea = false;
   bool _isGeocodingDockingPoint = false;
+
+  Timer? _operationAreaDebounceTimer;
+  Timer? _dockingPointDebounceTimer;
 
   @override
   void initState() {
@@ -84,6 +90,8 @@ class _EditScheduleScreenState extends State<EditScheduleScreen> {
   void dispose() {
     _notesController.dispose();
     _radiusController.dispose();
+    _operationAreaDebounceTimer?.cancel();
+    _dockingPointDebounceTimer?.cancel();
     super.dispose();
   }
 
@@ -292,8 +300,10 @@ class _EditScheduleScreenState extends State<EditScheduleScreen> {
                   final lat = double.tryParse(value);
                   if (lat != null) {
                     _latitude = lat;
-                    _operationAreaAddress = null;
-                    _updateOperationAreaAddress();
+                    setState(() {
+                      _operationAreaAddress = null;
+                    });
+                    _debouncedUpdateOperationAreaAddress();
                   }
                 },
                 validator: (value) {
@@ -330,8 +340,10 @@ class _EditScheduleScreenState extends State<EditScheduleScreen> {
                   final lng = double.tryParse(value);
                   if (lng != null) {
                     _longitude = lng;
-                    _operationAreaAddress = null;
-                    _updateOperationAreaAddress();
+                    setState(() {
+                      _operationAreaAddress = null;
+                    });
+                    _debouncedUpdateOperationAreaAddress();
                   }
                 },
                 validator: (value) {
@@ -444,8 +456,10 @@ class _EditScheduleScreenState extends State<EditScheduleScreen> {
                   final lat = double.tryParse(value);
                   if (lat != null) {
                     _dockingLatitude = lat;
-                    _dockingPointAddress = null;
-                    _updateDockingPointAddress();
+                    setState(() {
+                      _dockingPointAddress = null;
+                    });
+                    _debouncedUpdateDockingPointAddress();
                   }
                 },
                 validator: (value) {
@@ -482,8 +496,10 @@ class _EditScheduleScreenState extends State<EditScheduleScreen> {
                   final lng = double.tryParse(value);
                   if (lng != null) {
                     _dockingLongitude = lng;
-                    _dockingPointAddress = null;
-                    _updateDockingPointAddress();
+                    setState(() {
+                      _dockingPointAddress = null;
+                    });
+                    _debouncedUpdateDockingPointAddress();
                   }
                 },
                 validator: (value) {
@@ -744,7 +760,23 @@ class _EditScheduleScreenState extends State<EditScheduleScreen> {
     }
   }
 
+  void _debouncedUpdateOperationAreaAddress() {
+    _operationAreaDebounceTimer?.cancel();
+    _operationAreaDebounceTimer = Timer(const Duration(milliseconds: 800), () {
+      _updateOperationAreaAddress();
+    });
+  }
+
+  void _debouncedUpdateDockingPointAddress() {
+    _dockingPointDebounceTimer?.cancel();
+    _dockingPointDebounceTimer = Timer(const Duration(milliseconds: 800), () {
+      _updateDockingPointAddress();
+    });
+  }
+
   Future<void> _updateOperationAreaAddress() async {
+    if (!mounted) return;
+
     setState(() {
       _isGeocodingOperationArea = true;
     });
@@ -763,8 +795,12 @@ class _EditScheduleScreenState extends State<EditScheduleScreen> {
         });
       }
     } catch (e) {
+      if (kDebugMode) {
+        print('Failed to get operation area address: $e');
+      }
       if (mounted) {
         setState(() {
+          _operationAreaAddress = null;
           _isGeocodingOperationArea = false;
         });
       }
@@ -772,6 +808,8 @@ class _EditScheduleScreenState extends State<EditScheduleScreen> {
   }
 
   Future<void> _updateDockingPointAddress() async {
+    if (!mounted) return;
+
     setState(() {
       _isGeocodingDockingPoint = true;
     });
@@ -790,8 +828,12 @@ class _EditScheduleScreenState extends State<EditScheduleScreen> {
         });
       }
     } catch (e) {
+      if (kDebugMode) {
+        print('Failed to get docking point address: $e');
+      }
       if (mounted) {
         setState(() {
+          _dockingPointAddress = null;
           _isGeocodingDockingPoint = false;
         });
       }

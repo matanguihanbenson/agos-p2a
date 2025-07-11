@@ -22,7 +22,7 @@ class BotVerificationForm extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header (as before)
+        // Header
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -56,7 +56,8 @@ class BotVerificationForm extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 24),
-        // Barcode scan option (as before)
+
+        // Barcode scan option
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
@@ -76,10 +77,11 @@ class BotVerificationForm extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Point camera at bot barcode',
+                'Point camera at bot barcode for instant registration',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: colorScheme.onSurface.withOpacity(0.7),
                 ),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
@@ -89,13 +91,21 @@ class BotVerificationForm extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: colorScheme.primary,
                   foregroundColor: colorScheme.onPrimary,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ],
           ),
         ),
         const SizedBox(height: 24),
-        // OR Divider (as before)
+
+        // OR Divider
         Row(
           children: [
             Expanded(
@@ -107,6 +117,7 @@ class BotVerificationForm extends StatelessWidget {
                 'OR',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: colorScheme.onSurface.withOpacity(0.7),
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
@@ -116,7 +127,8 @@ class BotVerificationForm extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 24),
-        // Manual serial input (as before)
+
+        // Manual serial input
         Text(
           'Enter Serial Number',
           style: theme.textTheme.titleMedium?.copyWith(
@@ -144,6 +156,7 @@ class BotVerificationForm extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 24),
+
         // Verify button
         SizedBox(
           width: double.infinity,
