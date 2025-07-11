@@ -13,6 +13,7 @@ class _UsersScreenState extends State<UsersScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   bool _showActiveOnly = false;
+  bool _showInactiveOnly = false;
   bool _isSubmitting = false;
 
   @override
@@ -181,15 +182,41 @@ class _UsersScreenState extends State<UsersScreen> {
             onChanged: (value) => setState(() => _searchQuery = value),
           ),
           const SizedBox(height: 12),
-          FilterChip(
-            label: const Text('Active Only'),
-            selected: _showActiveOnly,
-            onSelected: (selected) =>
-                setState(() => _showActiveOnly = selected),
-            selectedColor: colorScheme.primaryContainer,
-            checkmarkColor: colorScheme.onPrimaryContainer,
-            backgroundColor: colorScheme.surface,
-            side: BorderSide(color: colorScheme.outline.withOpacity(0.3)),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              FilterChip(
+                label: const Text('Active Only'),
+                selected: _showActiveOnly,
+                onSelected: (selected) {
+                  setState(() {
+                    _showActiveOnly = selected;
+                    if (selected)
+                      _showInactiveOnly = false; // Ensure mutual exclusivity
+                  });
+                },
+                selectedColor: colorScheme.primaryContainer,
+                checkmarkColor: colorScheme.onPrimaryContainer,
+                backgroundColor: colorScheme.surface,
+                side: BorderSide(color: colorScheme.outline.withOpacity(0.3)),
+              ),
+              FilterChip(
+                label: const Text('Inactive Only'),
+                selected: _showInactiveOnly,
+                onSelected: (selected) {
+                  setState(() {
+                    _showInactiveOnly = selected;
+                    if (selected)
+                      _showActiveOnly = false; // Ensure mutual exclusivity
+                  });
+                },
+                selectedColor: Colors.orange.withOpacity(0.2),
+                checkmarkColor: Colors.orange.shade700,
+                backgroundColor: colorScheme.surface,
+                side: BorderSide(color: colorScheme.outline.withOpacity(0.3)),
+              ),
+            ],
           ),
         ],
       ),
@@ -197,10 +224,23 @@ class _UsersScreenState extends State<UsersScreen> {
   }
 
   Widget _buildUsersList(ColorScheme colorScheme) {
+    // Get current admin user
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    // If no admin is logged in, show error state
+    if (currentUser == null) {
+      return _buildEmptyState(
+        colorScheme,
+        Icons.error_outline_rounded,
+        'Authentication Error',
+        'No admin user is currently logged in',
+      );
+    }
+
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('users')
-          .where('created_by_admin', isNotEqualTo: '')
+          .where('created_by_admin', isEqualTo: currentUser.uid)
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
@@ -227,9 +267,14 @@ class _UsersScreenState extends State<UsersScreen> {
               name.contains(_searchQuery.toLowerCase()) ||
               email.contains(_searchQuery.toLowerCase());
 
-          bool matchesActive = !_showActiveOnly || isActive;
+          bool matchesActiveFilter = true;
+          if (_showActiveOnly) {
+            matchesActiveFilter = isActive;
+          } else if (_showInactiveOnly) {
+            matchesActiveFilter = !isActive;
+          }
 
-          return matchesSearch && matchesActive;
+          return matchesSearch && matchesActiveFilter;
         }).toList();
 
         if (users.isEmpty) {
@@ -237,7 +282,7 @@ class _UsersScreenState extends State<UsersScreen> {
             colorScheme,
             Icons.people_outline_rounded,
             'No field operators found',
-            _searchQuery.isNotEmpty || _showActiveOnly
+            _searchQuery.isNotEmpty || _showActiveOnly || _showInactiveOnly
                 ? 'Try adjusting your search or filter criteria'
                 : 'You haven\'t created any field operators yet',
           );

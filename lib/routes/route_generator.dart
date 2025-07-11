@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../modules/auth/presentation/pages/login_page.dart';
+import '../modules/auth/presentation/pages/signup_page.dart';
 import '../modules/auth/presentation/pages/splash_page.dart';
 import '../core/widgets/navigation/bottom_navigation.dart';
 import '../modules/bot/presentation/pages/bot_details.dart';
@@ -17,6 +18,9 @@ class RouteGenerator {
 
       case AppRoutes.login:
         return MaterialPageRoute(builder: (_) => const LoginPage());
+
+      case AppRoutes.signup:
+        return MaterialPageRoute(builder: (_) => const SignupPage());
 
       case AppRoutes.home:
         return MaterialPageRoute(builder: (_) => const BottomNavigation());

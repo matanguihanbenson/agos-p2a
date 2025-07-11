@@ -356,7 +356,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         TextButton(
                           onPressed: () {
-                            // TODO: Navigate to register page
+                            Navigator.pushNamed(context, AppRoutes.signup);
                           },
                           style: TextButton.styleFrom(
                             padding: const EdgeInsets.symmetric(horizontal: 8),
