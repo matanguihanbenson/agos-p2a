@@ -3,6 +3,7 @@ import '../widgets/schedule_card.dart';
 import '../widgets/schedule_filter_bar.dart';
 import 'edit_schedule_screen.dart';
 import 'create_schedule_screen.dart';
+import 'view_schedule_screen.dart';
 
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
@@ -18,37 +19,79 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   // Mock data - replace with actual Firestore data
   final List<Map<String, dynamic>> _schedules = [
     {
-      'schedule_id': '1',
-      'bot_id': 'BOT-001',
-      'created_by': 'user123',
+      'schedule_id': 'RCS-001',
+      'bot_id': 'AGOS-001',
+      'created_by': 'River Admin',
       'deployment_start': DateTime.now().add(const Duration(hours: 2)),
       'deployment_end': DateTime.now().add(const Duration(hours: 4)),
       'status': 'scheduled',
-      'area_center': {'latitude': 14.5995, 'longitude': 120.9842},
-      'area_radius_m': 100,
-      'notes': 'Main plaza cleaning - Regular maintenance schedule',
+      'area_center': {
+        'latitude': 13.4116,
+        'longitude': 121.1825,
+      }, // Calapan River
+      'area_radius_m': 150,
+      'docking_point': {'latitude': 13.4110, 'longitude': 121.1820},
+      'notes':
+          'Calapan River cleanup - Focus on plastic debris and water quality monitoring near city center',
+      'created_at': DateTime.now().subtract(const Duration(days: 2)),
+      'updated_at': DateTime.now().subtract(const Duration(hours: 1)),
     },
     {
-      'schedule_id': '2',
-      'bot_id': 'BOT-002',
-      'created_by': 'user456',
+      'schedule_id': 'RCS-002',
+      'bot_id': 'AGOS-002',
+      'created_by': 'Environmental Officer',
       'deployment_start': DateTime.now().subtract(const Duration(hours: 1)),
       'deployment_end': DateTime.now().add(const Duration(hours: 1)),
       'status': 'active',
-      'area_center': {'latitude': 14.6042, 'longitude': 120.9822},
-      'area_radius_m': 150,
-      'notes': 'Park area maintenance - High traffic zone',
+      'area_center': {
+        'latitude': 13.3694,
+        'longitude': 121.0889,
+      }, // Bucayao River
+      'area_radius_m': 200,
+      'docking_point': {'latitude': 13.3690, 'longitude': 121.0885},
+      'notes':
+          'Bucayao River section - High priority cleanup due to recent pollution reports and agricultural runoff',
+      'created_at': DateTime.now().subtract(const Duration(days: 1)),
+      'updated_at': DateTime.now().subtract(const Duration(minutes: 30)),
     },
     {
-      'schedule_id': '3',
-      'bot_id': 'BOT-003',
-      'created_by': 'user789',
+      'schedule_id': 'RCS-003',
+      'bot_id': 'AGOS-003',
+      'created_by': 'Water Quality Team',
       'deployment_start': DateTime.now().subtract(const Duration(hours: 3)),
       'deployment_end': DateTime.now().subtract(const Duration(hours: 1)),
       'status': 'completed',
-      'area_center': {'latitude': 14.6000, 'longitude': 120.9800},
-      'area_radius_m': 80,
-      'notes': 'Street cleaning completed successfully',
+      'area_center': {
+        'latitude': 13.3167,
+        'longitude': 121.1167,
+      }, // Naujan Lake
+      'area_radius_m': 300,
+      'docking_point': {'latitude': 13.3160, 'longitude': 121.1160},
+      'notes':
+          'Naujan Lake cleanup completed - Collected 18kg of debris, pH levels stable, turbidity within normal range',
+      'created_at': DateTime.now().subtract(const Duration(days: 3)),
+      'updated_at': DateTime.now().subtract(const Duration(hours: 1)),
+      'completed_at': DateTime.now().subtract(const Duration(hours: 1)),
+    },
+    {
+      'schedule_id': 'RCS-004',
+      'bot_id': 'AGOS-001',
+      'created_by': 'River Admin',
+      'deployment_start': DateTime.now().subtract(const Duration(days: 1)),
+      'deployment_end': DateTime.now().subtract(
+        const Duration(days: 1, hours: -2),
+      ),
+      'status': 'cancelled',
+      'area_center': {
+        'latitude': 13.4050,
+        'longitude': 121.1750,
+      }, // Calapan River (different section)
+      'area_radius_m': 120,
+      'docking_point': {'latitude': 13.4045, 'longitude': 121.1745},
+      'notes':
+          'Calapan River upper section - Cancelled due to severe weather conditions and dangerous water levels',
+      'created_at': DateTime.now().subtract(const Duration(days: 2)),
+      'updated_at': DateTime.now().subtract(const Duration(days: 1)),
     },
   ];
 
@@ -60,7 +103,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       backgroundColor: theme.colorScheme.background,
       appBar: AppBar(
         title: const Text(
-          'Schedule Management',
+          'River Cleanup Schedules',
           style: TextStyle(fontWeight: FontWeight.w600),
         ),
         automaticallyImplyLeading: false,
@@ -77,7 +120,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   )
                 : const Icon(Icons.refresh_outlined),
             onPressed: _isLoading ? null : _refreshSchedules,
-            tooltip: 'Refresh schedules',
+            tooltip: 'Refresh cleanup schedules',
           ),
           const SizedBox(width: 8),
         ],
@@ -99,7 +142,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _createNewSchedule,
         icon: const Icon(Icons.add),
-        label: const Text('New Schedule'),
+        label: const Text('New Cleanup'),
       ),
     );
   }
@@ -142,23 +185,23 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
     switch (_selectedFilter) {
       case 'scheduled':
-        message = 'No scheduled deployments';
+        message = 'No scheduled river cleanups';
         icon = Icons.schedule_outlined;
         break;
       case 'active':
-        message = 'No active deployments';
+        message = 'No active cleanup operations';
         icon = Icons.play_circle_outline;
         break;
       case 'completed':
-        message = 'No completed deployments';
+        message = 'No completed cleanup operations';
         icon = Icons.check_circle_outline;
         break;
       case 'cancelled':
-        message = 'No cancelled deployments';
+        message = 'No cancelled cleanup operations';
         icon = Icons.cancel_outlined;
         break;
       default:
-        message = 'No schedules found';
+        message = 'No cleanup schedules found';
         icon = Icons.schedule_outlined;
     }
 
@@ -182,8 +225,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           const SizedBox(height: 8),
           Text(
             _selectedFilter == 'all'
-                ? 'Create your first schedule to get started'
-                : 'Try adjusting your filters or create a new schedule',
+                ? 'Schedule your first river cleanup to get started'
+                : 'Try adjusting your filters or schedule a new cleanup',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurface.withOpacity(0.5),
             ),
@@ -194,7 +237,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             ElevatedButton.icon(
               onPressed: _createNewSchedule,
               icon: const Icon(Icons.add),
-              label: const Text('Create Schedule'),
+              label: const Text('Schedule Cleanup'),
             ),
           ],
         ],
@@ -220,11 +263,18 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   void _viewScheduleDetails(Map<String, dynamic> schedule) {
-    // Navigate to schedule details screen
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('View details for ${schedule['bot_id']}')),
-    );
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(
+            builder: (context) => ViewScheduleScreen(schedule: schedule),
+          ),
+        )
+        .then((result) {
+          if (result == true) {
+            // Schedule was modified, refresh the list
+            _refreshSchedules();
+          }
+        });
   }
 
   void _editSchedule(Map<String, dynamic> schedule) {
@@ -246,9 +296,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Cancel Schedule'),
+        title: const Text('Cancel Cleanup'),
         content: Text(
-          'Are you sure you want to cancel the schedule for ${schedule['bot_id']}?',
+          'Are you sure you want to cancel the river cleanup schedule for ${schedule['bot_id']}?',
         ),
         actions: [
           TextButton(
@@ -260,7 +310,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               Navigator.pop(context);
               // Implement cancel logic
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Schedule cancelled')),
+                const SnackBar(content: Text('Cleanup schedule cancelled')),
               );
             },
             child: const Text('Yes'),
@@ -274,8 +324,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Recall Bot'),
-        content: Text('Are you sure you want to recall ${schedule['bot_id']}?'),
+        title: const Text('Return Bot'),
+        content: Text(
+          'Are you sure you want to return ${schedule['bot_id']} to base? This will stop the current cleanup operation.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -286,7 +338,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               Navigator.pop(context);
               // Implement recall logic
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Bot recalled successfully')),
+                const SnackBar(content: Text('Bot returned successfully')),
               );
             },
             child: const Text('Yes'),
@@ -311,7 +363,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Schedules refreshed'),
+          content: Text('Cleanup schedules refreshed'),
           duration: Duration(seconds: 2),
         ),
       );

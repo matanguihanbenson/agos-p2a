@@ -26,16 +26,26 @@ class ProfileDialogs {
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context);
-
-              // Clear any cached data and sign out
+              Navigator.pop(context); // Close dialog first
               try {
+                // Use the same logout logic as dashboard
                 await FirebaseAuth.instance.signOut();
+                if (context.mounted) {
+                  Navigator.of(
+                    context,
+                  ).pushNamedAndRemoveUntil('/login', (route) => false);
+                }
               } catch (e) {
-                // Handle error if needed
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error signing out: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               }
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Sign Out'),
           ),
         ],

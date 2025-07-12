@@ -166,6 +166,21 @@ class _SettingsTab extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 24),
+
+          // Add Sign Out Section
+          SettingsSection(
+            title: 'Account',
+            items: [
+              SettingsItem(
+                title: 'Sign Out',
+                subtitle: 'Sign out of your account',
+                icon: Icons.logout,
+                onTap: () => ProfileDialogs.showSignOutDialog(context),
+                isDestructive: true,
+              ),
+            ],
+          ),
           const SizedBox(height: 32),
         ],
       ),
