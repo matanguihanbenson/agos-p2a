@@ -23,10 +23,11 @@ dependencies:
   http: ^1.4.0
   intl: ^0.20.2
   url_launcher: ^6.3.2
-  fl_chart: ^1.0.0
+  fl_chart: ^0.65.0
   geolocator: ^14.0.2
   mobile_scanner: ^5.1.1
   permission_handler: ^11.3.1
+  shared_preferences: ^2.5.3
 
 dev_dependencies:
   flutter_test:
