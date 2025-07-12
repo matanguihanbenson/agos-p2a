@@ -12,6 +12,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../widgets/impact/impact_summary_cards.dart';
 import '../widgets/impact/area_filter_chips.dart';
 import '../widgets/impact/compact_metrics_chart.dart';
+import '../widgets/impact/trash_types_analytics.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -459,6 +460,12 @@ class _ImpactTabState extends State<_ImpactTab> {
                       _buildDetailedMetricCard(1, theme),
                       const SizedBox(height: 16),
                       _buildDetailedMetricCard(2, theme),
+                      const SizedBox(height: 16),
+                      // Add trash types analytics
+                      TrashTypesAnalytics(
+                        selectedArea: _selectedArea,
+                        selectedTrendPeriod: _selectedTrendPeriod,
+                      ),
                     ],
                   ),
 
@@ -659,7 +666,7 @@ class _ImpactTabState extends State<_ImpactTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with detailed info
+            // Header with improved title styling
             Row(
               children: [
                 Container(
@@ -678,37 +685,54 @@ class _ImpactTabState extends State<_ImpactTab> {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         chartData['title'] as String,
-                        style: theme.textTheme.titleLarge?.copyWith(
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          // Changed to titleMedium like trash types
                           fontWeight: FontWeight.w600,
+                          height: 1.2, // Better line height
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${_getTrendPeriodDescription(_selectedTrendPeriod)} • ${_getAreaLabel(_selectedArea)}',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.6),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        chartData['context'] as String,
+                        chartData['subtitle'] as String, // Moved subtitle here
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.5),
+                          fontWeight: FontWeight.normal, // Regular weight
+                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                          height: 1.1,
                         ),
                       ),
                     ],
                   ),
                 ),
-                // Only show the trend indicator badge, remove current value
+                // Only show the trend indicator badge
                 _buildTrendIndicator(chartData['change'] as String, theme),
               ],
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 12), // Reduced spacing
+            // Context info - moved to separate line for better readability
+            Text(
+              '${_getTrendPeriodDescription(_selectedTrendPeriod)} • ${_getAreaLabel(_selectedArea)}',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.5),
+                fontSize: 11,
+              ),
+            ),
 
+            const SizedBox(height: 4), // Reduced spacing
+
+            Text(
+              chartData['context'] as String,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.5),
+                fontSize: 11,
+              ),
+            ),
+
+            const SizedBox(height: 16), // Adjusted spacing
             // Chart with more height for detail
             SizedBox(
               height: 180,
