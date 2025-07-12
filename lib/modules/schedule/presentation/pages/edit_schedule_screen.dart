@@ -638,6 +638,7 @@ class _EditScheduleScreenState extends State<EditScheduleScreen> {
               IconButton(
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: address));
+                  ScaffoldMessenger.of(context).clearSnackBars();
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Address copied to clipboard'),

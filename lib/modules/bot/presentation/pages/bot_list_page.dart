@@ -113,6 +113,7 @@ class _BotListPageState extends State<BotListPage> {
   }
 
   void _showComingSoon(String feature) {
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('$feature feature coming soon'),

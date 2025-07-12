@@ -229,6 +229,7 @@ class _NotificationScreenState extends State<NotificationScreen>
 
   void _markAllAsRead() {
     _notificationService.markAllAsRead();
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('All notifications marked as read'),

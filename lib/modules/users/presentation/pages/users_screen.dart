@@ -637,6 +637,7 @@ class _UsersScreenState extends State<UsersScreen> {
         'updated_at': FieldValue.serverTimestamp(),
       });
     } catch (e) {
+      ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error updating user status: $e')));
@@ -811,12 +812,12 @@ class _UsersScreenState extends State<UsersScreen> {
                   'lastname': lastNameController.text,
                   'email': emailController.text,
                   'organization': organizationController.text,
-                  'role': 'field_operator', // Auto-assigned role
-                  'ecoPoints': 0, // Default value
+                  'role': 'field_operator',
+                  'ecoPoints': 0,
                   'isActive': isActive,
-                  'badges': [], // Default empty array
+                  'badges': [],
                   'updated_at': FieldValue.serverTimestamp(),
-                  'created_by_admin': currentUser.uid, // Use actual admin ID
+                  'created_by_admin': currentUser.uid,
                 };
 
                 if (!isEditing) {

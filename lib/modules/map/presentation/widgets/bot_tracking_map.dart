@@ -361,6 +361,7 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
       },
       onError: (error) {
         if (mounted) {
+          ScaffoldMessenger.of(context).clearSnackBars();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Error connecting to bot data: $error'),
@@ -716,6 +717,7 @@ class _BotTrackingMapState extends State<BotTrackingMap> {
         final nearestPosition = _botLocations[nearestId]!;
         _moveMapSafely(nearestPosition, currentZoom);
 
+        ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("Recentered to nearest bot: $nearestId"),

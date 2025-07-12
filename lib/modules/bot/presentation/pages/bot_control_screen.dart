@@ -273,6 +273,7 @@ class _BotControlScreenState extends State<BotControlScreen>
   }
 
   void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),

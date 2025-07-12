@@ -179,6 +179,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
 
   void _showErrorSnackBar(String message) {
     if (mounted) {
+      ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
@@ -192,6 +193,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
 
   void _showSuccessSnackBar(String message) {
     if (mounted) {
+      ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),

@@ -28,6 +28,7 @@ class UserActions extends StatelessWidget {
   }
 
   void _showComingSoon(BuildContext context, String feat) {
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text('$feat coming soon')));

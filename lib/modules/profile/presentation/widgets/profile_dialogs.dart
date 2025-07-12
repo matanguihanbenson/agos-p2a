@@ -74,6 +74,7 @@ class ProfileDialogs {
             onPressed: () {
               Navigator.pop(context);
               // TODO: Add your real export logic here!
+              ScaffoldMessenger.of(context).clearSnackBars();
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Data export initiated')),
               );

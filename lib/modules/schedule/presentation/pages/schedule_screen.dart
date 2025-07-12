@@ -221,6 +221,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   void _viewScheduleDetails(Map<String, dynamic> schedule) {
     // Navigate to schedule details screen
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('View details for ${schedule['bot_id']}')),
     );

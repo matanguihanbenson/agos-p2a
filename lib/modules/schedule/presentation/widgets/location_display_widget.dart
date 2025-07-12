@@ -39,7 +39,7 @@ class _LocationDisplayWidgetState extends State<LocationDisplayWidget> {
   @override
   void didUpdateWidget(LocationDisplayWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.latitude != widget.latitude || 
+    if (oldWidget.latitude != widget.latitude ||
         oldWidget.longitude != widget.longitude) {
       _loadAddress();
     }
@@ -53,13 +53,13 @@ class _LocationDisplayWidgetState extends State<LocationDisplayWidget> {
 
     try {
       final address = await GeocodingService.reverseGeocode(
-        widget.latitude, 
-        widget.longitude
+        widget.latitude,
+        widget.longitude,
       );
-      
+
       if (mounted) {
         setState(() {
-          _address = address != null 
+          _address = address != null
               ? GeocodingService.formatAddress(address)
               : null;
           _isLoadingAddress = false;
@@ -77,26 +77,20 @@ class _LocationDisplayWidgetState extends State<LocationDisplayWidget> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.2),
-        ),
+        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                widget.icon,
-                size: 20,
-                color: theme.colorScheme.primary,
-              ),
+              Icon(widget.icon, size: 20, color: theme.colorScheme.primary),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -115,7 +109,7 @@ class _LocationDisplayWidgetState extends State<LocationDisplayWidget> {
             ],
           ),
           const SizedBox(height: 12),
-          
+
           // Coordinates
           Row(
             children: [
@@ -136,7 +130,7 @@ class _LocationDisplayWidgetState extends State<LocationDisplayWidget> {
               ),
             ],
           ),
-          
+
           if (widget.showRadius && widget.radius != null) ...[
             const SizedBox(height: 8),
             _buildInfoRow(
@@ -146,9 +140,9 @@ class _LocationDisplayWidgetState extends State<LocationDisplayWidget> {
               icon: Icons.radio_button_unchecked,
             ),
           ],
-          
+
           const SizedBox(height: 12),
-          
+
           // Address
           if (_isLoadingAddress)
             Row(
@@ -175,11 +169,7 @@ class _LocationDisplayWidgetState extends State<LocationDisplayWidget> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.place,
-                  size: 16,
-                  color: theme.colorScheme.secondary,
-                ),
+                Icon(Icons.place, size: 16, color: theme.colorScheme.secondary),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(
@@ -199,6 +189,7 @@ class _LocationDisplayWidgetState extends State<LocationDisplayWidget> {
                           TextButton.icon(
                             onPressed: () {
                               Clipboard.setData(ClipboardData(text: _address!));
+                              ScaffoldMessenger.of(context).clearSnackBars();
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text('Address copied to clipboard'),
@@ -209,7 +200,9 @@ class _LocationDisplayWidgetState extends State<LocationDisplayWidget> {
                             icon: const Icon(Icons.copy, size: 14),
                             label: const Text('Copy'),
                             style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
                               minimumSize: const Size(0, 32),
                             ),
                           ),
@@ -218,7 +211,9 @@ class _LocationDisplayWidgetState extends State<LocationDisplayWidget> {
                             icon: const Icon(Icons.refresh, size: 14),
                             label: const Text('Refresh'),
                             style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
                               minimumSize: const Size(0, 32),
                             ),
                           ),
@@ -270,11 +265,7 @@ class _LocationDisplayWidgetState extends State<LocationDisplayWidget> {
     return Row(
       children: [
         if (icon != null) ...[
-          Icon(
-            icon,
-            size: 14,
-            color: theme.colorScheme.outline,
-          ),
+          Icon(icon, size: 14, color: theme.colorScheme.outline),
           const SizedBox(width: 4),
         ],
         Text(

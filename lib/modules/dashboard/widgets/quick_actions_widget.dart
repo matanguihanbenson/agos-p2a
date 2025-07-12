@@ -30,21 +30,25 @@ class QuickActionsWidget extends StatelessWidget {
         );
         break;
       case 'Assign Bot':
+        ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Assign Bot feature coming soon')),
         );
         break;
       case 'Add Operator':
+        ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Add Operator feature coming soon')),
         );
         break;
       case 'New Schedule':
+        ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('New Schedule feature coming soon')),
         );
         break;
       default:
+        ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('$actionLabel feature coming soon')),
         );

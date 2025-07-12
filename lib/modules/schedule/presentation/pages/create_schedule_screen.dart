@@ -668,6 +668,7 @@ class _CreateScheduleScreenState extends State<CreateScheduleScreen> {
               IconButton(
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: address));
+                  ScaffoldMessenger.of(context).clearSnackBars();
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Address copied to clipboard'),
@@ -956,6 +957,7 @@ class _CreateScheduleScreenState extends State<CreateScheduleScreen> {
         _updateDockingPointAddress();
 
         if (mounted) {
+          ScaffoldMessenger.of(context).clearSnackBars();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -979,6 +981,7 @@ class _CreateScheduleScreenState extends State<CreateScheduleScreen> {
               'Location services disabled. Please enable in device settings.';
         }
 
+        ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errorMessage),

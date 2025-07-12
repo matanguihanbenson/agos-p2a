@@ -79,6 +79,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
         _updateLocationAddress();
 
         if (mounted) {
+          ScaffoldMessenger.of(context).clearSnackBars();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -102,6 +103,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
               'Location services disabled. Please enable in device settings.';
         }
 
+        ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errorMessage),

@@ -136,6 +136,7 @@ class AdminActions extends StatelessWidget {
                   });
                   if (context.mounted) {
                     Navigator.pop(context);
+                    ScaffoldMessenger.of(context).clearSnackBars();
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Bot updated successfully')),
                     );

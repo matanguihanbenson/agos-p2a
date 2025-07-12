@@ -707,6 +707,7 @@ class _AssignBotScreenState extends ConsumerState<AssignBotScreen> {
         final lastName = userData?['lastname'] ?? '';
         final userName = (firstName + ' ' + lastName).trim();
 
+        ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -723,6 +724,7 @@ class _AssignBotScreenState extends ConsumerState<AssignBotScreen> {
       }
     } catch (e) {
       if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error assigning bots: $e'),

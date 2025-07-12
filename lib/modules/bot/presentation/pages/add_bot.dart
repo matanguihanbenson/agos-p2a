@@ -18,13 +18,11 @@ class _AddBotScreenState extends ConsumerState<AddBotScreen> {
   final _serialNumberController = TextEditingController();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _organizationController =
-      TextEditingController(); // Add organization controller
+  final _organizationController = TextEditingController();
 
   bool _isVerifying = false;
   bool _isRegistering = false;
 
-  // Bot verification states
   bool _isBotVerified = false;
   String? _verifiedBotId;
   Map<String, dynamic>? _botRegistryData;
@@ -34,13 +32,14 @@ class _AddBotScreenState extends ConsumerState<AddBotScreen> {
     _serialNumberController.dispose();
     _nameController.dispose();
     _descriptionController.dispose();
-    _organizationController.dispose(); // Dispose organization controller
+    _organizationController.dispose();
     super.dispose();
   }
 
   // --- BOT VERIFICATION LOGIC ---
   Future<void> _verifyBot() async {
     if (_serialNumberController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please enter a serial number'),
@@ -63,6 +62,7 @@ class _AddBotScreenState extends ConsumerState<AddBotScreen> {
 
       if (!docSnapshot.exists) {
         if (mounted) {
+          ScaffoldMessenger.of(context).clearSnackBars();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Please enter a valid serial number'),
@@ -78,6 +78,7 @@ class _AddBotScreenState extends ConsumerState<AddBotScreen> {
 
       if (isRegistered == true) {
         if (mounted) {
+          ScaffoldMessenger.of(context).clearSnackBars();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Bot already registered'),
@@ -95,6 +96,7 @@ class _AddBotScreenState extends ConsumerState<AddBotScreen> {
       });
 
       if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Successfully connected to bot!'),
@@ -104,6 +106,7 @@ class _AddBotScreenState extends ConsumerState<AddBotScreen> {
       }
     } catch (e) {
       if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error verifying bot: ${e.toString()}'),
@@ -165,6 +168,7 @@ class _AddBotScreenState extends ConsumerState<AddBotScreen> {
       await batch.commit();
 
       if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -177,6 +181,7 @@ class _AddBotScreenState extends ConsumerState<AddBotScreen> {
       }
     } catch (e) {
       if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error registering bot: ${e.toString()}'),
@@ -206,6 +211,7 @@ class _AddBotScreenState extends ConsumerState<AddBotScreen> {
       }
     } catch (e) {
       if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error opening barcode scanner: ${e.toString()}'),

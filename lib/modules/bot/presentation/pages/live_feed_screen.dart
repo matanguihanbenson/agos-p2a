@@ -120,6 +120,7 @@ class _LiveFeedScreenState extends State<LiveFeedScreen>
       _isRecording = !_isRecording;
     });
 
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(_isRecording ? 'Recording started' : 'Recording stopped'),
