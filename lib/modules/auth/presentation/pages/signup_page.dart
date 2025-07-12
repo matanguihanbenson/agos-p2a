@@ -85,13 +85,16 @@ class _SignupPageState extends State<SignupPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final size = MediaQuery.of(context).size;
+    final isSmallScreen = size.width < 400;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 32.0),
+            padding: EdgeInsets.symmetric(
+              horizontal: isSmallScreen ? 20.0 : 32.0,
+            ),
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 maxWidth: size.width > 600 ? 380 : double.infinity,
@@ -102,20 +105,20 @@ class _SignupPageState extends State<SignupPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: 40),
+                    SizedBox(height: isSmallScreen ? 20 : 40),
 
                     // Logo/Brand section
                     Container(
-                      height: 80,
-                      width: 80,
-                      margin: const EdgeInsets.only(bottom: 32),
+                      height: isSmallScreen ? 60 : 80,
+                      width: isSmallScreen ? 60 : 80,
+                      margin: EdgeInsets.only(bottom: isSmallScreen ? 24 : 32),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.primary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Icon(
                         Icons.sailing,
-                        size: 40,
+                        size: isSmallScreen ? 30 : 40,
                         color: theme.colorScheme.primary,
                       ),
                     ),
@@ -125,7 +128,8 @@ class _SignupPageState extends State<SignupPage> {
                       'Create Account',
                       style: theme.textTheme.displayMedium?.copyWith(
                         fontWeight: FontWeight.w700,
-                        letterSpacing: -0.5,
+                        letterSpacing: -0.2,
+                        fontSize: isSmallScreen ? 28 : null,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -136,10 +140,11 @@ class _SignupPageState extends State<SignupPage> {
                         color: theme.textTheme.bodyMedium?.color?.withOpacity(
                           0.7,
                         ),
+                        letterSpacing: 0,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 48),
+                    SizedBox(height: isSmallScreen ? 32 : 48),
 
                     // Error message
                     if (_error != null) ...[
@@ -148,7 +153,7 @@ class _SignupPageState extends State<SignupPage> {
                         margin: const EdgeInsets.only(bottom: 24),
                         decoration: BoxDecoration(
                           color: theme.colorScheme.error.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: theme.colorScheme.error.withOpacity(0.2),
                             width: 1,
@@ -167,6 +172,7 @@ class _SignupPageState extends State<SignupPage> {
                                 _error!,
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: theme.colorScheme.error,
+                                  letterSpacing: 0,
                                 ),
                               ),
                             ),
@@ -192,7 +198,7 @@ class _SignupPageState extends State<SignupPage> {
                             },
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        SizedBox(width: isSmallScreen ? 12 : 16),
                         Expanded(
                           child: _buildInputField(
                             label: 'Last Name',
@@ -209,7 +215,7 @@ class _SignupPageState extends State<SignupPage> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: isSmallScreen ? 16 : 20),
 
                     // Email field
                     _buildInputField(
@@ -228,7 +234,7 @@ class _SignupPageState extends State<SignupPage> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: isSmallScreen ? 16 : 20),
 
                     // Password field
                     _buildInputField(
@@ -247,7 +253,7 @@ class _SignupPageState extends State<SignupPage> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: isSmallScreen ? 16 : 20),
 
                     // Confirm Password field
                     _buildInputField(
@@ -266,18 +272,18 @@ class _SignupPageState extends State<SignupPage> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 32),
+                    SizedBox(height: isSmallScreen ? 24 : 32),
 
                     // Signup button
                     SizedBox(
-                      height: 56,
+                      height: isSmallScreen ? 50 : 56,
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _signup,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: theme.colorScheme.primary,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           elevation: 0,
                           shadowColor: Colors.transparent,
@@ -298,12 +304,12 @@ class _SignupPageState extends State<SignupPage> {
                                 style: theme.textTheme.bodyLarge?.copyWith(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.5,
+                                  letterSpacing: 0,
                                 ),
                               ),
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    SizedBox(height: isSmallScreen ? 24 : 32),
 
                     // Login link
                     Row(
@@ -314,6 +320,7 @@ class _SignupPageState extends State<SignupPage> {
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.textTheme.bodyMedium?.color
                                 ?.withOpacity(0.8),
+                            letterSpacing: 0,
                           ),
                         ),
                         TextButton(
@@ -330,12 +337,13 @@ class _SignupPageState extends State<SignupPage> {
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: theme.colorScheme.primary,
                               fontWeight: FontWeight.w600,
+                              letterSpacing: 0,
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 40),
+                    SizedBox(height: isSmallScreen ? 20 : 40),
                   ],
                 ),
               ),
@@ -356,6 +364,8 @@ class _SignupPageState extends State<SignupPage> {
     bool obscureText = false,
   }) {
     final theme = Theme.of(context);
+    final size = MediaQuery.of(context).size;
+    final isSmallScreen = size.width < 400;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -365,6 +375,7 @@ class _SignupPageState extends State<SignupPage> {
           style: theme.textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.w600,
             color: theme.textTheme.bodyLarge?.color,
+            letterSpacing: 0,
           ),
         ),
         const SizedBox(height: 8),
@@ -372,14 +383,15 @@ class _SignupPageState extends State<SignupPage> {
           controller: controller,
           keyboardType: keyboardType,
           obscureText: obscureText,
-          style: theme.textTheme.bodyLarge,
+          style: theme.textTheme.bodyLarge?.copyWith(letterSpacing: 0),
           decoration: InputDecoration(
             hintText: hintText,
             hintStyle: theme.textTheme.bodyLarge?.copyWith(
               color: theme.textTheme.bodyMedium?.color?.withOpacity(0.5),
+              letterSpacing: 0,
             ),
             prefixIcon: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(isSmallScreen ? 14 : 16),
               child: Icon(
                 icon,
                 size: 20,
@@ -387,35 +399,35 @@ class _SignupPageState extends State<SignupPage> {
               ),
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
                 color: Colors.grey.withOpacity(0.3),
                 width: 1,
               ),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
                 color: Colors.grey.withOpacity(0.3),
                 width: 1,
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
                 color: theme.colorScheme.primary,
                 width: 2,
               ),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: theme.colorScheme.error, width: 1),
             ),
             filled: true,
             fillColor: Colors.grey.withOpacity(0.03),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 18,
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: isSmallScreen ? 16 : 20,
+              vertical: isSmallScreen ? 16 : 18,
             ),
           ),
           validator: validator,
