@@ -99,7 +99,12 @@ class ScheduleCard extends StatelessWidget {
     );
   }
 
-  Widget _buildTimeInfo(ThemeData theme, DateTime startTime, DateTime endTime, DateTime now) {
+  Widget _buildTimeInfo(
+    ThemeData theme,
+    DateTime startTime,
+    DateTime endTime,
+    DateTime now,
+  ) {
     final isActive = now.isAfter(startTime) && now.isBefore(endTime);
     final isUpcoming = startTime.isAfter(now);
     final duration = endTime.difference(startTime);
@@ -109,9 +114,7 @@ class ScheduleCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.2),
-        ),
+        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
       ),
       child: Column(
         children: [
@@ -124,7 +127,11 @@ class ScheduleCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                isActive ? 'Currently Running' : isUpcoming ? 'Scheduled' : 'Completed',
+                isActive
+                    ? 'Currently Running'
+                    : isUpcoming
+                    ? 'Scheduled'
+                    : 'Completed',
                 style: theme.textTheme.labelMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: isActive ? Colors.green : theme.colorScheme.primary,
@@ -206,11 +213,7 @@ class ScheduleCard extends StatelessWidget {
           style: theme.textTheme.bodySmall,
         ),
         const Spacer(),
-        Icon(
-          Icons.my_location,
-          size: 16,
-          color: theme.colorScheme.secondary,
-        ),
+        Icon(Icons.my_location, size: 16, color: theme.colorScheme.secondary),
         const SizedBox(width: 4),
         Text(
           'View Map',
@@ -261,9 +264,7 @@ class ScheduleCard extends StatelessWidget {
       return Row(
         children: [
           for (int i = 0; i < actions.length; i++) ...[
-            Expanded(
-              child: _buildIconAction(theme, actions[i]),
-            ),
+            Expanded(child: _buildIconAction(theme, actions[i])),
             if (i < actions.length - 1) const SizedBox(width: 8),
           ],
         ],
@@ -303,11 +304,7 @@ class ScheduleCard extends StatelessWidget {
                   width: 1,
                 ),
               ),
-              child: Icon(
-                action['icon'],
-                size: 18,
-                color: action['color'],
-              ),
+              child: Icon(action['icon'], size: 18, color: action['color']),
             ),
             const SizedBox(height: 4),
             Text(
@@ -326,10 +323,12 @@ class ScheduleCard extends StatelessWidget {
     );
   }
 
-  List<Map<String, dynamic>> _getAvailableActions(ThemeData theme, String status) {
+  List<Map<String, dynamic>> _getAvailableActions(
+    ThemeData theme,
+    String status,
+  ) {
     final actions = <Map<String, dynamic>>[];
-    
-    // Always include view action
+
     actions.add({
       'icon': Icons.visibility_outlined,
       'label': 'View',
@@ -344,7 +343,7 @@ class ScheduleCard extends StatelessWidget {
         'color': theme.colorScheme.primary,
         'onPressed': onEdit,
       });
-      
+
       if (onCancel != null) {
         actions.add({
           'icon': Icons.cancel_outlined,
@@ -429,7 +428,7 @@ class ScheduleCard extends StatelessWidget {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final scheduleDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
-    
+
     String dateStr;
     if (scheduleDate == today) {
       dateStr = 'Today';
@@ -440,7 +439,7 @@ class ScheduleCard extends StatelessWidget {
     } else {
       dateStr = '${dateTime.day}/${dateTime.month}';
     }
-    
+
     return '$dateStr ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 }
