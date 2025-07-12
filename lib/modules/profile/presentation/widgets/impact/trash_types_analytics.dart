@@ -19,6 +19,19 @@ class _TrashTypesAnalyticsState extends State<TrashTypesAnalytics> {
   bool _showLegend = false;
   int _currentPage = 0;
   static const int _itemsPerPage = 6; // Show 6 items per page
+  late PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: _currentPage);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -199,10 +212,13 @@ class _TrashTypesAnalyticsState extends State<TrashTypesAnalytics> {
     );
   }
 
-  Widget _buildLegendSection(ThemeData theme, List<Map<String, dynamic>> trashData) {
+  Widget _buildLegendSection(
+    ThemeData theme,
+    List<Map<String, dynamic>> trashData,
+  ) {
     final totalPages = (trashData.length / _itemsPerPage).ceil();
     final hasMultiplePages = totalPages > 1;
-    
+
     return Column(
       children: [
         // Legend header with item count
@@ -231,14 +247,14 @@ class _TrashTypesAnalyticsState extends State<TrashTypesAnalytics> {
               ),
           ],
         ),
-        
+
         const SizedBox(height: 12),
-        
+
         // Legend content with fixed height container
         SizedBox(
-          height: _calculateLegendHeight(trashData),
+          height: _calculateLegendHeight(trashData, totalPages),
           child: PageView.builder(
-            controller: PageController(initialPage: _currentPage),
+            controller: _pageController,
             onPageChanged: (page) {
               setState(() {
                 _currentPage = page;
@@ -250,77 +266,112 @@ class _TrashTypesAnalyticsState extends State<TrashTypesAnalytics> {
             },
           ),
         ),
-        
+
         // Page indicators (only show if multiple pages)
         if (hasMultiplePages) ...[
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Previous button
-              IconButton(
-                onPressed: _currentPage > 0 
-                    ? () {
-                        setState(() {
-                          _currentPage--;
-                        });
-                      }
-                    : null,
-                icon: Icon(
-                  Icons.chevron_left,
-                  size: 20,
-                  color: _currentPage > 0 
-                      ? theme.colorScheme.onSurface.withOpacity(0.7)
-                      : theme.colorScheme.onSurface.withOpacity(0.3),
-                ),
-                visualDensity: VisualDensity.compact,
-              ),
-              
-              // Page dots
-              ...List.generate(totalPages, (index) {
-                return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 2),
-                  width: 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: index == _currentPage 
-                        ? theme.colorScheme.primary 
-                        : theme.colorScheme.onSurface.withOpacity(0.3),
-                    shape: BoxShape.circle,
+          const SizedBox(height: 8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Previous button
+                SizedBox(
+                  width: 32,
+                  height: 32,
+                  child: IconButton(
+                    onPressed: _currentPage > 0
+                        ? () {
+                            setState(() {
+                              _currentPage--;
+                            });
+                            _pageController.animateToPage(
+                              _currentPage,
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          }
+                        : null,
+                    icon: Icon(
+                      Icons.chevron_left,
+                      size: 16,
+                      color: _currentPage > 0
+                          ? theme.colorScheme.onSurface.withOpacity(0.7)
+                          : theme.colorScheme.onSurface.withOpacity(0.3),
+                    ),
+                    padding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
                   ),
-                );
-              }),
-              
-              // Next button
-              IconButton(
-                onPressed: _currentPage < totalPages - 1 
-                    ? () {
-                        setState(() {
-                          _currentPage++;
-                        });
-                      }
-                    : null,
-                icon: Icon(
-                  Icons.chevron_right,
-                  size: 20,
-                  color: _currentPage < totalPages - 1 
-                      ? theme.colorScheme.onSurface.withOpacity(0.7)
-                      : theme.colorScheme.onSurface.withOpacity(0.3),
                 ),
-                visualDensity: VisualDensity.compact,
-              ),
-            ],
+
+                // Page dots with constraints
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 80),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(totalPages, (index) {
+                      return Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 1),
+                        width: 4,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: index == _currentPage
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.onSurface.withOpacity(0.3),
+                          shape: BoxShape.circle,
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+
+                // Next button
+                SizedBox(
+                  width: 32,
+                  height: 32,
+                  child: IconButton(
+                    onPressed: _currentPage < totalPages - 1
+                        ? () {
+                            setState(() {
+                              _currentPage++;
+                            });
+                            _pageController.animateToPage(
+                              _currentPage,
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          }
+                        : null,
+                    icon: Icon(
+                      Icons.chevron_right,
+                      size: 16,
+                      color: _currentPage < totalPages - 1
+                          ? theme.colorScheme.onSurface.withOpacity(0.7)
+                          : theme.colorScheme.onSurface.withOpacity(0.3),
+                    ),
+                    padding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ],
     );
   }
 
-  Widget _buildLegendPage(ThemeData theme, List<Map<String, dynamic>> trashData, int pageIndex) {
+  Widget _buildLegendPage(
+    ThemeData theme,
+    List<Map<String, dynamic>> trashData,
+    int pageIndex,
+  ) {
     final startIndex = pageIndex * _itemsPerPage;
     final endIndex = (startIndex + _itemsPerPage).clamp(0, trashData.length);
     final pageItems = trashData.sublist(startIndex, endIndex);
-    
+
     return Column(
       children: [
         // Grid layout for better organization
@@ -345,42 +396,21 @@ class _TrashTypesAnalyticsState extends State<TrashTypesAnalytics> {
             );
           },
         ),
-        
-        // Show "and X more..." if there are remaining items
-        if (pageIndex == (trashData.length / _itemsPerPage).ceil() - 1 && 
-            trashData.length > _itemsPerPage * ((trashData.length / _itemsPerPage).ceil())) ...[
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: theme.colorScheme.outline.withOpacity(0.3),
-                style: BorderStyle.solid,
-              ),
-            ),
-            child: Text(
-              '... and ${trashData.length - (pageIndex + 1) * _itemsPerPage} more types',
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w500,
-                fontSize: 11,
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
-              ),
-            ),
-          ),
-        ],
       ],
     );
   }
 
-  double _calculateLegendHeight(List<Map<String, dynamic>> trashData) {
-    final itemsOnCurrentPage = (_itemsPerPage).clamp(0, trashData.length - (_currentPage * _itemsPerPage));
-    final rows = (itemsOnCurrentPage / 2).ceil();
-    const itemHeight = 32.0; // Approximate height per row
+  double _calculateLegendHeight(
+    List<Map<String, dynamic>> trashData,
+    int totalPages,
+  ) {
+    // Calculate height based on maximum items per page to prevent overflow
+    const maxItemsPerPage = _itemsPerPage;
+    final maxRows = (maxItemsPerPage / 2).ceil();
+    const itemHeight = 32.0;
     const spacing = 6.0;
-    
-    return (rows * itemHeight) + ((rows - 1) * spacing) + 16; // Add padding
+
+    return (maxRows * itemHeight) + ((maxRows - 1) * spacing) + 16;
   }
 
   Widget _buildCompactLegendItem(
@@ -391,7 +421,10 @@ class _TrashTypesAnalyticsState extends State<TrashTypesAnalytics> {
     int count,
   ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3), // More compact
+      padding: const EdgeInsets.symmetric(
+        horizontal: 6,
+        vertical: 3,
+      ), // More compact
       decoration: BoxDecoration(
         color: color.withOpacity(0.08), // Softer background
         borderRadius: BorderRadius.circular(6),
@@ -465,7 +498,13 @@ class _TrashTypesAnalyticsState extends State<TrashTypesAnalytics> {
         'count': 18,
         'color': Colors.brown,
       },
-      {'type': 'Others', 'percentage': 8.0, 'count': 14, 'color': Colors.grey},
+      {
+        'type': 'Metal Cans',
+        'percentage': 5.0,
+        'count': 9,
+        'color': Colors.grey[600]!,
+      },
+      {'type': 'Others', 'percentage': 3.0, 'count': 6, 'color': Colors.grey},
     ];
   }
 

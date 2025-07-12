@@ -1,20 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/models/user_model.dart';
+import '../pages/edit_profile_screen.dart';
 
 class ProfileDialogs {
   static void showEditProfileDialog(BuildContext context, UserProfile user) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Profile'),
-        content: const Text('Profile editing feature coming soon!'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditProfileScreen(userProfile: user),
       ),
     );
   }
@@ -37,16 +31,8 @@ class ProfileDialogs {
               // Clear any cached data and sign out
               try {
                 await FirebaseAuth.instance.signOut();
-
-                // Navigate to login and clear the navigation stack
-                if (context.mounted) {
-                  Navigator.of(
-                    context,
-                  ).pushNamedAndRemoveUntil('/login', (route) => false);
-                }
               } catch (e) {
-                // Handle sign out error if needed
-                print('Sign out error: $e');
+                // Handle error if needed
               }
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
