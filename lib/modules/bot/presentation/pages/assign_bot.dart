@@ -668,7 +668,7 @@ class _AssignBotScreenState extends ConsumerState<AssignBotScreen> {
     switch (status.toLowerCase()) {
       case 'deployed':
         return Colors.green;
-      case 'recalled':
+      case 'returned':
         return Colors.orange;
       case 'maintenance':
         return Colors.red;

@@ -378,7 +378,7 @@ class _BotDetailsPageState extends State<BotDetailsPage>
       case 'deployed':
         return Colors.green;
       case 'inactive':
-      case 'recalled':
+      case 'returned':
         return Colors.orange;
       case 'error':
       case 'failed':

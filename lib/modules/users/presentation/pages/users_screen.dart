@@ -97,7 +97,8 @@ class _UsersScreenState extends State<UsersScreen> {
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () => _showUserDialog(context),
+                onPressed: () =>
+                    Navigator.pushNamed(context, '/add-field-operator'),
                 icon: const Icon(Icons.person_add_rounded, size: 18),
                 label: const Text('Add Field Operator'),
                 style: ElevatedButton.styleFrom(
@@ -394,89 +395,6 @@ class _UsersScreenState extends State<UsersScreen> {
     );
   }
 
-  Widget _buildUserCard(
-    QueryDocumentSnapshot doc,
-    Map<String, dynamic> data,
-    ColorScheme colorScheme,
-  ) {
-    return Card(
-      margin: EdgeInsets.zero,
-      color: colorScheme.background,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: colorScheme.outline.withOpacity(0.2)),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => _showUserDialog(context, doc),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: colorScheme.primary,
-                    radius: 18,
-                    child: Text(
-                      (data['firstname']?[0] ?? '').toUpperCase(),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const Spacer(),
-                  _buildStatusIndicator(data['isActive'] ?? true, colorScheme),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                '${data['firstname'] ?? ''} ${data['lastname'] ?? ''}',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.onSurface,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                data['email'] ?? '',
-                style: TextStyle(
-                  color: colorScheme.onSurface.withOpacity(0.7),
-                  fontSize: 12,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: colorScheme.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(
-                    color: colorScheme.primary.withOpacity(0.3),
-                  ),
-                ),
-                child: Text(
-                  'Field Operator',
-                  style: TextStyle(
-                    color: colorScheme.primary,
-                    fontWeight: FontWeight.w500,
-                    fontSize: 10,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildUserListTile(
     QueryDocumentSnapshot doc,
     Map<String, dynamic> data,
@@ -596,7 +514,11 @@ class _UsersScreenState extends State<UsersScreen> {
             onSelected: (value) {
               switch (value) {
                 case 'edit':
-                  _showUserDialog(context, doc);
+                  Navigator.pushNamed(
+                    context,
+                    '/edit-field-operator',
+                    arguments: doc,
+                  );
                   break;
                 case 'toggle':
                   _toggleUserStatus(doc.id, !(data['isActive'] ?? true));
@@ -606,7 +528,8 @@ class _UsersScreenState extends State<UsersScreen> {
           ),
         ],
       ),
-      onTap: () => _showUserDialog(context, doc),
+      onTap: () =>
+          Navigator.pushNamed(context, '/view-field-operator', arguments: doc),
     );
   }
 

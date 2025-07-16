@@ -22,30 +22,21 @@ class QuickActionsWidget extends StatelessWidget {
           arguments: {'action': 'control'},
         );
         break;
-      case 'Emergency Recall':
+      case 'Emergency Return':
         Navigator.pushNamed(
           context,
           '/bot-selection',
-          arguments: {'action': 'emergency-recall'},
+          arguments: {'action': 'emergency-return'},
         );
         break;
       case 'Assign Bot':
-        ScaffoldMessenger.of(context).clearSnackBars();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Assign Bot feature coming soon')),
-        );
+        Navigator.pushNamed(context, '/assign-bot');
         break;
       case 'Add Operator':
-        ScaffoldMessenger.of(context).clearSnackBars();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Add Operator feature coming soon')),
-        );
+        Navigator.pushNamed(context, '/add-field-operator');
         break;
       case 'New Schedule':
-        ScaffoldMessenger.of(context).clearSnackBars();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('New Schedule feature coming soon')),
-        );
+        Navigator.pushNamed(context, '/create-schedule');
         break;
       default:
         ScaffoldMessenger.of(context).clearSnackBars();
@@ -62,7 +53,7 @@ class QuickActionsWidget extends StatelessWidget {
         ? [
             {
               'icon': Icons.undo_rounded,
-              'label': 'Emergency Recall',
+              'label': 'Emergency Return',
               'color': Colors.orange,
               'subtitle': 'Emergency',
             },

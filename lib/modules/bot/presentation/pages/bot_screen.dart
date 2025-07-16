@@ -12,6 +12,7 @@ import '../widgets/bot_empty_state.dart';
 import '../widgets/bot_card.dart';
 import 'add_bot.dart';
 import 'assign_bot.dart';
+import 'reassign_bot.dart';
 
 class BotScreen extends ConsumerStatefulWidget {
   final String? role; // Optional
@@ -231,7 +232,12 @@ class _BotScreenState extends ConsumerState<BotScreen> {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () {
-                        // TODO: Implement reassign bot logic/modal
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ReassignBotScreen(),
+                          ),
+                        );
                       },
                       icon: const Icon(Icons.swap_horiz_rounded, size: 18),
                       label: const Text('Reassign'),
@@ -362,7 +368,7 @@ class _BotListOrGridState extends State<BotListOrGrid> {
 
     switch (widget.statusFilter) {
       case 'deployed':
-      case 'recalled':
+      case 'returned':
         return status == widget.statusFilter;
       case 'active':
         return active;

@@ -79,8 +79,8 @@ class _BotListPageState extends State<BotListPage> {
         return 'Select Bot for Live Feed';
       case 'control':
         return 'Select Bot to Control';
-      case 'emergency-recall':
-        return 'Select Bot for Emergency Recall';
+      case 'emergency-return':
+        return 'Select Bot for Emergency Return';
       default:
         return 'Select Bot';
     }
@@ -103,8 +103,8 @@ class _BotListPageState extends State<BotListPage> {
       case 'control':
         _showComingSoon('Bot Control');
         break;
-      case 'emergency-recall':
-        _showEmergencyRecallDialog(botDoc);
+      case 'emergency-return':
+        _showEmergencyReturnDialog(botDoc);
         break;
       default:
         Navigator.pushNamed(context, '/live-feed', arguments: botDoc);
@@ -122,15 +122,15 @@ class _BotListPageState extends State<BotListPage> {
     );
   }
 
-  void _showEmergencyRecallDialog(DocumentSnapshot botDoc) {
+  void _showEmergencyReturnDialog(DocumentSnapshot botDoc) {
     final botData = botDoc.data() as Map<String, dynamic>;
     final botName = botData['name'] ?? 'Bot ${botDoc.id}';
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Emergency Recall'),
-        content: Text('Are you sure you want to recall $botName immediately?'),
+        title: const Text('Emergency Return'),
+        content: Text('Are you sure you want to return $botName immediately?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -139,10 +139,10 @@ class _BotListPageState extends State<BotListPage> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              _showComingSoon('Emergency Recall');
+              _showComingSoon('Emergency Return');
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Recall'),
+            child: const Text('Return'),
           ),
         ],
       ),

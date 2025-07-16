@@ -5,7 +5,7 @@ class ScheduleCard extends StatelessWidget {
   final VoidCallback onView;
   final VoidCallback? onEdit;
   final VoidCallback? onCancel;
-  final VoidCallback? onRecall;
+  final VoidCallback? onReturn;
 
   const ScheduleCard({
     super.key,
@@ -13,7 +13,7 @@ class ScheduleCard extends StatelessWidget {
     required this.onView,
     this.onEdit,
     this.onCancel,
-    this.onRecall,
+    this.onReturn,
   });
 
   @override
@@ -352,12 +352,12 @@ class ScheduleCard extends StatelessWidget {
           'onPressed': onCancel,
         });
       }
-    } else if (status == 'active' && onRecall != null) {
+    } else if (status == 'active' && onReturn != null) {
       actions.add({
         'icon': Icons.stop_circle_outlined,
         'label': 'Recall',
         'color': theme.colorScheme.error,
-        'onPressed': onRecall,
+        'onPressed': onReturn,
       });
     }
 

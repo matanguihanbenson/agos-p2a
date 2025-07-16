@@ -170,8 +170,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           onCancel: schedule['status'] == 'scheduled'
               ? () => _cancelSchedule(schedule)
               : null,
-          onRecall: schedule['status'] == 'active'
-              ? () => _recallBot(schedule)
+          onReturn: schedule['status'] == 'active'
+              ? () => _returnBot(schedule)
               : null,
         );
       },
@@ -320,7 +320,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  void _recallBot(Map<String, dynamic> schedule) {
+  void _returnBot(Map<String, dynamic> schedule) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -336,7 +336,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              // Implement recall logic
+              // Implement return logic
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Bot returned successfully')),
               );

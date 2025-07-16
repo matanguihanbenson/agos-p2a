@@ -94,7 +94,7 @@ class _ViewScheduleScreenState extends State<ViewScheduleScreen> {
               ],
               if (status == 'active')
                 PopupMenuItem(
-                  value: 'recall',
+                  value: 'return',
                   child: Row(
                     children: [
                       Icon(
@@ -676,9 +676,9 @@ class _ViewScheduleScreenState extends State<ViewScheduleScreen> {
             ] else if (status == 'active') ...[
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: _recallBot,
+                  onPressed: _returnBot,
                   icon: const Icon(Icons.stop_circle),
-                  label: const Text('Recall Bot'),
+                  label: const Text('Return Bot'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: theme.colorScheme.error,
                     foregroundColor: Colors.white,
@@ -816,8 +816,8 @@ class _ViewScheduleScreenState extends State<ViewScheduleScreen> {
       case 'cancel':
         _cancelSchedule();
         break;
-      case 'recall':
-        _recallBot();
+      case 'return':
+        _returnBot();
         break;
     }
   }
@@ -920,7 +920,7 @@ Operation: Trash Collection & Water Quality Monitoring
     );
   }
 
-  void _recallBot() {
+  void _returnBot() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
