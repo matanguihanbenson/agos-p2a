@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:agos/routes/app_routes.dart';
 
 class LoginPage extends StatefulWidget {
@@ -58,7 +59,6 @@ class _LoginPageState extends State<LoginPage> {
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -73,23 +73,17 @@ class _LoginPageState extends State<LoginPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: 60),
+                    const SizedBox(height: 0),
 
-                    // Logo/Brand section
-                    Container(
-                      height: 80,
-                      width: 80,
-                      margin: const EdgeInsets.only(bottom: 32),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Icon(
-                        Icons.sailing,
-                        size: 40,
-                        color: theme.colorScheme.primary,
+                    // Logo section - SVG with fallback
+                    Center(
+                      child: Container(
+                        height: 120,
+                        width: 120,
+                        child: _buildLogo(),
                       ),
                     ),
+                    const SizedBox(height: 12),
 
                     // Welcome text
                     Text(
@@ -410,5 +404,40 @@ class _LoginPageState extends State<LoginPage> {
         ),
       ),
     );
+  }
+
+  Widget _buildLogo() {
+    try {
+      return Image.asset(
+        'assets/images/logo.png',
+        height: 120,
+        width: 120,
+        fit: BoxFit.contain,
+      );
+    } catch (e) {
+      // Fallback to PNG if SVG fails
+      return Image.asset(
+        'assets/images/AGOSLOGOWTEXT.png',
+        height: 120,
+        width: 120,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) {
+          // Final fallback to icon
+          return Container(
+            height: 120,
+            width: 120,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Icon(
+              Icons.sailing,
+              size: 60,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          );
+        },
+      );
+    }
   }
 }

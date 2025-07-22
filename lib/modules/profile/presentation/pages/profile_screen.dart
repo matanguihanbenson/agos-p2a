@@ -856,7 +856,7 @@ class _ImpactTabState extends State<_ImpactTab> {
   String _getAverageValue(int index) {
     switch (index) {
       case 0:
-        return '22 items'; // Changed from '22.4kg'
+        return '22.4kg'; // Changed from '22 items'
       case 1:
         return '7.2';
       case 2:
@@ -869,7 +869,7 @@ class _ImpactTabState extends State<_ImpactTab> {
   String _getPeakValue(int index) {
     switch (index) {
       case 0:
-        return '35 items'; // Changed from '35.2kg'
+        return '35.2kg'; // Changed from '35 items'
       case 1:
         return '8.1';
       case 2:
@@ -882,7 +882,7 @@ class _ImpactTabState extends State<_ImpactTab> {
   String _getTargetValue(int index) {
     switch (index) {
       case 0:
-        return '30 items'; // Changed from '30kg'
+        return '30kg'; // Changed from '30 items'
       case 1:
         return '7.5';
       case 2:
@@ -983,7 +983,7 @@ class _ImpactTabState extends State<_ImpactTab> {
           'context': 'vs. previous week average',
           'data': _getTrashData(),
           'color': Colors.green,
-          'unit': 'items',
+          'unit': 'kg', // Changed from 'items'
           'icon': Icons.delete_outline,
           'timeLabels': _getTimeLabels(_selectedTrendPeriod),
         };

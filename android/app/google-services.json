@@ -10,7 +10,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:1075675221951:android:6105bb108a4e6c1ec45b0a",
         "android_client_info": {
-          "package_name": "com.example.agos"
+          "package_name": "io.agos.app"
         }
       },
       "oauth_client": [],

@@ -50,7 +50,7 @@ class ImpactSummaryCards extends StatelessWidget {
           'title': 'Total Trash',
           'value':
               '${(1250 * multiplier).toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}',
-          'unit': 'items', // Changed from 'kg'
+          'unit': 'kg', // Changed from 'items'
           'icon': Icons.delete_outline,
           'color': Colors.green,
           'trend': 15.2,
@@ -85,7 +85,7 @@ class ImpactSummaryCards extends StatelessWidget {
         {
           'title': 'Trash Collected',
           'value': '${(75 * multiplier).toInt()}',
-          'unit': 'items', // Changed from 'kg'
+          'unit': 'kg', // Changed from 'items'
           'icon': Icons.delete_outline,
           'color': Colors.green,
           'trend': 25.0,

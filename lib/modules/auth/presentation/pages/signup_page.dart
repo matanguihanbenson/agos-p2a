@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:agos/routes/app_routes.dart';
+import 'package:agos/modules/auth/presentation/pages/email_verification_page.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -37,38 +38,19 @@ class _SignupPageState extends State<SignupPage> {
     });
 
     try {
-      // Create user with Firebase Auth
-      final userCredential = await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(
-            email: _emailController.text.trim(),
-            password: _passwordController.text.trim(),
-          );
-
-      // Create user document in Firestore
-      if (userCredential.user != null) {
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(userCredential.user!.uid)
-            .set({
-              'email': _emailController.text.trim(),
-              'firstname': _firstnameController.text.trim(),
-              'lastname': _lastnameController.text.trim(),
-              'role': 'admin',
-              'isActive': true,
-              'organization': '',
-              'created_at': FieldValue.serverTimestamp(),
-              'updated_at': FieldValue.serverTimestamp(),
-            });
-
-        print('✅ Signup successful');
-
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, AppRoutes.home);
-        }
-      }
-    } on FirebaseAuthException catch (e) {
+      // Navigate to email verification instead of creating user immediately
       if (mounted) {
-        setState(() => _error = e.message);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => EmailVerificationPage(
+              email: _emailController.text.trim(),
+              password: _passwordController.text.trim(),
+              firstname: _firstnameController.text.trim(),
+              lastname: _lastnameController.text.trim(),
+            ),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -107,19 +89,38 @@ class _SignupPageState extends State<SignupPage> {
                   children: [
                     SizedBox(height: isSmallScreen ? 20 : 40),
 
-                    // Logo/Brand section
-                    Container(
-                      height: isSmallScreen ? 60 : 80,
-                      width: isSmallScreen ? 60 : 80,
-                      margin: EdgeInsets.only(bottom: isSmallScreen ? 24 : 32),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Icon(
-                        Icons.sailing,
-                        size: isSmallScreen ? 30 : 40,
-                        color: theme.colorScheme.primary,
+                    // Logo section - using same logo as login page
+                    Center(
+                      child: Container(
+                        height: isSmallScreen ? 80 : 120,
+                        width: isSmallScreen ? 80 : 120,
+                        margin: EdgeInsets.only(
+                          bottom: isSmallScreen ? 24 : 32,
+                        ),
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          height: isSmallScreen ? 80 : 120,
+                          width: isSmallScreen ? 80 : 120,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            // Fallback to icon if image fails to load
+                            return Container(
+                              height: isSmallScreen ? 80 : 120,
+                              width: isSmallScreen ? 80 : 120,
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primary.withOpacity(
+                                  0.1,
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Icon(
+                                Icons.sailing,
+                                size: isSmallScreen ? 30 : 40,
+                                color: theme.colorScheme.primary,
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     ),
 

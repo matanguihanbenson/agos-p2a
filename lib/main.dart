@@ -4,7 +4,6 @@ import 'routes/app_routes.dart';
 import 'data/firebase_initializer.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:agos/core/theme/theme.dart';
-import 'modules/users/presentation/pages/add_field_operator_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../../../../routes/app_routes.dart'; // Add this import
+import '../../../../../routes/app_routes.dart';
 
 class AdminActions extends StatelessWidget {
   final DocumentReference docRef;
@@ -74,19 +74,13 @@ class AdminActions extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: ElevatedButton.icon(
-                onPressed: () {
-                  if (botDoc != null) {
-                    Navigator.pushNamed(
-                      context,
-                      AppRoutes.botControl,
-                      arguments: botDoc,
-                    );
-                  } else {
-                    _showComingSoon(context, 'Control');
-                  }
-                },
-                icon: const Icon(Icons.settings_remote_rounded, size: 18),
-                label: const Text('Control'),
+                onPressed: () => _returnBot(context),
+                icon: const Icon(Icons.home_outlined, size: 18),
+                label: const Text('Return Bot'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
+                ),
               ),
             ),
           ],
@@ -565,6 +559,84 @@ class AdminActions extends StatelessWidget {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text('$feat coming soon')));
+  }
+
+  void _returnBot(BuildContext context) async {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.home_outlined, color: Colors.orange, size: 20),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text('Return Bot', style: TextStyle(fontSize: 16)),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Are you sure you want to return this bot? It will return to its home position and stop current operations.',
+          style: TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await _performReturn(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Return'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _performReturn(BuildContext context) async {
+    try {
+      await docRef.update({
+        'status': 'returning',
+        'command': 'return',
+        'updated_at': FieldValue.serverTimestamp(),
+      });
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Text('Return command sent successfully'),
+              ],
+            ),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.error, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Text('Failed to send return command'),
+              ],
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }
 

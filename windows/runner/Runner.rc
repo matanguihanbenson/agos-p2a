@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource.
 //
 #pragma code_page(65001)
 #include "resource.h"
@@ -89,13 +89,8 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "agos" "\0"
-            VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "agos" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2025 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "agos.exe" "\0"
-            VALUE "ProductName", "agos" "\0"
+            VALUE "CompanyName", "AGOS Technologies" "\0"
+            VALUE "FileDescription", "AGOS App" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
@@ -114,6 +109,11 @@ END
 /////////////////////////////////////////////////////////////////////////////
 //
 // Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
 //
 
 

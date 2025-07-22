@@ -95,50 +95,24 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
             padding: const EdgeInsets.symmetric(horizontal: 48),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                // App Icon with subtle glow
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: const Color(0xFF60A5FA).withOpacity(0.05),
-                    border: Border.all(
-                      color: const Color(0xFF60A5FA).withOpacity(0.2),
-                      width: 1,
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.directions_boat,
-                    size: 56,
-                    color: Color(0xFF60A5FA),
-                  ),
+                // App Logo - larger and more prominent
+                Image.asset(
+                  'assets/images/AGOSLOGOWTEXT.png',
+                  width: 240,
+                  height: 240,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    // Fallback to icon if image fails to load
+                    return const Icon(
+                      Icons.directions_boat,
+                      size: 120,
+                      color: Color(0xFF60A5FA),
+                    );
+                  },
                 ),
-                const SizedBox(height: 20),
-
-                // App Name
-                const Text(
-                  'AGOS',
-                  style: TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.w300,
-                    color: Color(0xFF1F2937),
-                    letterSpacing: 8,
-                  ),
-                ),
-                const SizedBox(height: 6),
-
-                // Subtitle
-                Text(
-                  'Autonomous Garbage-cleaning Operation System',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    color: const Color(0xFF6B7280),
-                    letterSpacing: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 60),
+                const SizedBox(height: 24),
 
                 // Loading section
                 if (!_isLoadingComplete) ...[
@@ -151,7 +125,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                       color: const Color(0xFF374151),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
 
                   // Animated boat progress
                   SizedBox(

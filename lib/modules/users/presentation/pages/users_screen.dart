@@ -14,7 +14,6 @@ class _UsersScreenState extends State<UsersScreen> {
   String _searchQuery = '';
   bool _showActiveOnly = false;
   bool _showInactiveOnly = false;
-  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -30,62 +29,15 @@ class _UsersScreenState extends State<UsersScreen> {
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        elevation: 0,
+        title: const Text('Users Management'),
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
         automaticallyImplyLeading: false,
-        backgroundColor: colorScheme.background,
-        foregroundColor: colorScheme.onBackground,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'User Management',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 20),
-            ),
-            Text(
-              'Field Operators',
-              style: TextStyle(
-                fontSize: 12,
-                color: colorScheme.onSurface.withOpacity(0.7),
-              ),
-            ),
-          ],
-        ),
         actions: [
-          PopupMenuButton(
-            icon: Icon(
-              Icons.more_vert_rounded,
-              color: colorScheme.onSurface.withOpacity(0.7),
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'refresh',
-                child: Row(
-                  children: [
-                    Icon(Icons.refresh),
-                    SizedBox(width: 8),
-                    Text('Refresh'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'export',
-                child: Row(
-                  children: [
-                    Icon(Icons.download),
-                    SizedBox(width: 8),
-                    Text('Export Users'),
-                  ],
-                ),
-              ),
-            ],
-            onSelected: (value) {
-              if (value == 'refresh') {
-                setState(() {});
-              }
-            },
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => setState(() {}),
+            tooltip: 'Refresh',
           ),
         ],
       ),
@@ -193,8 +145,7 @@ class _UsersScreenState extends State<UsersScreen> {
                 onSelected: (selected) {
                   setState(() {
                     _showActiveOnly = selected;
-                    if (selected)
-                      _showInactiveOnly = false; // Ensure mutual exclusivity
+                    if (selected) _showInactiveOnly = false;
                   });
                 },
                 selectedColor: colorScheme.primaryContainer,
@@ -208,8 +159,7 @@ class _UsersScreenState extends State<UsersScreen> {
                 onSelected: (selected) {
                   setState(() {
                     _showInactiveOnly = selected;
-                    if (selected)
-                      _showActiveOnly = false; // Ensure mutual exclusivity
+                    if (selected) _showActiveOnly = false;
                   });
                 },
                 selectedColor: Colors.orange.withOpacity(0.2),
@@ -225,10 +175,8 @@ class _UsersScreenState extends State<UsersScreen> {
   }
 
   Widget _buildUsersList(ColorScheme colorScheme) {
-    // Get current admin user
     final currentUser = FirebaseAuth.instance.currentUser;
 
-    // If no admin is logged in, show error state
     if (currentUser == null) {
       return _buildEmptyState(
         colorScheme,
@@ -289,7 +237,6 @@ class _UsersScreenState extends State<UsersScreen> {
           );
         }
 
-        // Always use list view
         return _buildListView(users, colorScheme);
       },
     );
@@ -474,57 +421,18 @@ class _UsersScreenState extends State<UsersScreen> {
         children: [
           _buildStatusIndicator(data['isActive'] ?? true, colorScheme),
           const SizedBox(width: 8),
-          PopupMenuButton(
+          IconButton(
             icon: Icon(
-              Icons.more_vert_rounded,
-              color: colorScheme.onSurface.withOpacity(0.7),
+              Icons.edit_outlined,
+              color: colorScheme.primary,
+              size: 20,
             ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+            onPressed: () => Navigator.pushNamed(
+              context,
+              '/edit-field-operator',
+              arguments: doc,
             ),
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'edit',
-                child: Row(
-                  children: [
-                    Icon(Icons.edit_outlined, color: colorScheme.primary),
-                    const SizedBox(width: 8),
-                    const Text('Edit'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'toggle',
-                child: Row(
-                  children: [
-                    Icon(
-                      data['isActive'] == true
-                          ? Icons.block
-                          : Icons.check_circle,
-                      color: data['isActive'] == true
-                          ? Colors.orange
-                          : Colors.green,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(data['isActive'] == true ? 'Deactivate' : 'Activate'),
-                  ],
-                ),
-              ),
-            ],
-            onSelected: (value) {
-              switch (value) {
-                case 'edit':
-                  Navigator.pushNamed(
-                    context,
-                    '/edit-field-operator',
-                    arguments: doc,
-                  );
-                  break;
-                case 'toggle':
-                  _toggleUserStatus(doc.id, !(data['isActive'] ?? true));
-                  break;
-              }
-            },
+            tooltip: 'Edit Field Operator',
           ),
         ],
       ),
@@ -560,232 +468,12 @@ class _UsersScreenState extends State<UsersScreen> {
         'updated_at': FieldValue.serverTimestamp(),
       });
     } catch (e) {
-      ScaffoldMessenger.of(context).clearSnackBars();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error updating user status: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error updating user status: $e')),
+        );
+      }
     }
-  }
-
-  void _showUserDialog(BuildContext context, [DocumentSnapshot? userDoc]) {
-    final isEditing = userDoc != null;
-    final userData = isEditing
-        ? userDoc.data() as Map<String, dynamic>
-        : <String, dynamic>{};
-
-    final firstNameController = TextEditingController(
-      text: userData['firstname'] ?? '',
-    );
-    final lastNameController = TextEditingController(
-      text: userData['lastname'] ?? '',
-    );
-    final emailController = TextEditingController(
-      text: userData['email'] ?? '',
-    );
-    final organizationController = TextEditingController(
-      text: userData['organization'] ?? '',
-    );
-
-    bool isActive = userData['isActive'] ?? true;
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Row(
-            children: [
-              Icon(
-                isEditing ? Icons.edit_rounded : Icons.person_add_rounded,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(width: 8),
-              Text(isEditing ? 'Edit Field Operator' : 'Add Field Operator'),
-            ],
-          ),
-          content: SizedBox(
-            width: 400,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Field operators are users who operate bots in the field.',
-                    style: TextStyle(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withOpacity(0.7),
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: firstNameController,
-                          decoration: InputDecoration(
-                            labelText: 'First Name *',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            prefixIcon: const Icon(Icons.person),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: lastNameController,
-                          decoration: InputDecoration(
-                            labelText: 'Last Name',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: emailController,
-                    decoration: InputDecoration(
-                      labelText: 'Email *',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      prefixIcon: const Icon(Icons.email),
-                    ),
-                    keyboardType: TextInputType.emailAddress,
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: organizationController,
-                    decoration: InputDecoration(
-                      labelText: 'Organization (Optional)',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      prefixIcon: const Icon(Icons.business),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Card(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surfaceVariant.withOpacity(0.3),
-                    child: SwitchListTile(
-                      title: const Text('Active Status'),
-                      subtitle: Text(
-                        isActive ? 'User can operate bots' : 'User is inactive',
-                      ),
-                      value: isActive,
-                      onChanged: (value) =>
-                          setDialogState(() => isActive = value),
-                      secondary: Icon(
-                        isActive ? Icons.check_circle : Icons.cancel,
-                        color: isActive ? Colors.green : Colors.grey,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                // Prevent double tap by disabling the button after first tap
-                if (_isSubmitting) return;
-                setState(() => _isSubmitting = true);
-
-                if (firstNameController.text.isEmpty ||
-                    emailController.text.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Please fill in required fields'),
-                    ),
-                  );
-                  setState(() => _isSubmitting = false);
-                  return;
-                }
-
-                // Get current admin's ID
-                final currentUser = FirebaseAuth.instance.currentUser;
-                if (currentUser == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Error: No authenticated admin user'),
-                    ),
-                  );
-                  setState(() => _isSubmitting = false);
-                  return;
-                }
-
-                final userData = {
-                  'firstname': firstNameController.text,
-                  'lastname': lastNameController.text,
-                  'email': emailController.text,
-                  'organization': organizationController.text,
-                  'role': 'field_operator',
-                  'ecoPoints': 0,
-                  'isActive': isActive,
-                  'badges': [],
-                  'updated_at': FieldValue.serverTimestamp(),
-                  'created_by_admin': currentUser.uid,
-                };
-
-                if (!isEditing) {
-                  userData['created_at'] = FieldValue.serverTimestamp();
-                }
-
-                try {
-                  if (isEditing) {
-                    await FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(userDoc.id)
-                        .update(userData);
-                  } else {
-                    await FirebaseFirestore.instance
-                        .collection('users')
-                        .add(userData);
-                  }
-
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Field operator ${isEditing ? 'updated' : 'created'} successfully',
-                      ),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Error ${isEditing ? 'updating' : 'creating'} field operator: $e',
-                      ),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                } finally {
-                  if (mounted) setState(() => _isSubmitting = false);
-                }
-              },
-              child: Text(isEditing ? 'Update' : 'Create'),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

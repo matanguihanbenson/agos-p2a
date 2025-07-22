@@ -73,7 +73,7 @@ class DefaultFirebaseOptions {
     databaseURL:
         'https://p2a-hackathon-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'p2a-hackathon.firebasestorage.app',
-    iosBundleId: 'com.example.agos',
+    iosBundleId: 'io.agos.app',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
@@ -84,6 +84,6 @@ class DefaultFirebaseOptions {
     databaseURL:
         'https://p2a-hackathon-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'p2a-hackathon.firebasestorage.app',
-    iosBundleId: 'com.example.agos',
+    iosBundleId: 'io.agos.app',
   );
 }
